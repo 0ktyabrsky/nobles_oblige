@@ -1,4 +1,4 @@
-import pandas as pd
+
 from . import credit
 class User:
     def __init__(self, user_id, user_name, balance = 1000):
@@ -56,8 +56,7 @@ class User:
 
         return info
     #showing user's info :balance, id, etc
-    def show_info(self):
-        return pd.DataFrame([self.info()])
+    
     
     # sending money function
     def transaction(self, amount, reciever):
@@ -105,12 +104,7 @@ class User:
     # function to show every credit that user has and and all credit details, so it should looks like that: credits>>>credit>>>credit_details
     #def show_taken_loans(self):
         
-    def show_taken_loans(self):
-        return pd.DataFrame([loan.borrower_view() for loan in self.taken_loans])
-    
-    def show_given_loans(self):
-        return pd.DataFrame([loan.lender_view() for loan in self.given_loans])
-    
+
     def repay_debt(self, amount, loan_id):
         if amount > self.balance:
              return f" not enough balance"

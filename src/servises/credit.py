@@ -1,4 +1,4 @@
-import pandas as pd 
+
 # creating credit class with the loan divided into small periodic payment where commission taken every payment
 '''
 My plan is to make a full loan experience
@@ -97,9 +97,6 @@ class CreditS:
             
         return f'This loan repayed successfully:\n {self.show_credit_details()}'
 
-    def show_balance(self): # generating good loking balance
-        return pd.DataFrame(self.balance) 
-
 
     def credit_details(self):
 
@@ -120,8 +117,7 @@ class CreditS:
         
     
 
-    def show_credit_details(self): #to generate good loking credit details
-        return pd.DataFrame( [self.credit_details()])
+
     
     def borrower_view(self): # to show how much loan you got and more total details
         details = self.credit_details()
