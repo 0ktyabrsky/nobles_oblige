@@ -12,13 +12,22 @@ jobs:
               uses: actions/setup-python@v5
               with:
                 python-version: '3.11'
+            - name: Install Flutter
+              uses: subosito/flutter-action@v2
+              with:
+                flutter-version: '3.28.7'
+                cache: true
+
             - name: Install dependences
               run: |
                 pip install flet
                 pip install briefcase
             - name: Build Apk
               run: |
-                flet build apk
+                flet build apk --no-rich
+              env:
+                CI: true
+                
             - name: Upload APK
               uses: actions/upload-artifact@v4
               with:
