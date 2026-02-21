@@ -1,0 +1,68 @@
+import flet as ft
+from login import login_view
+from dashboard import dashboard_view
+from lend_money import lend_money_view
+from loan_creation import loan_creation_view
+from investments import investments_view
+from borrow_money import borrow_money_view
+from loan_request import loan_request_view
+from loans import loans_view
+# from investments import investments_view
+# from loans import loans_view
+
+
+# navigating all pages 
+
+def main(page: ft.Page):    
+    # window width and heights for android apps
+    page.window_width = 390
+    page.window_height = 844
+    print("App started!")
+    page.title = 'My App'
+    page.bgcolor = ft.Colors.BLACK
+
+
+
+    #route changing 
+    def route_change(route):
+        #debugging
+        print(f'Route changed to {page.route}')
+        # remove all pages 
+        page.views.clear()
+
+        # check if initital page is dashboard
+        if page.route == '/dashboard':
+            print('showing dashboad')
+            page.views.append(dashboard_view(page))
+        # showing lend money
+        elif page.route == '/lend_money':
+            print('showing lend money page')
+            page.views.append(lend_money_view(page))
+        # showing loan creation page
+        elif page.route == '/loan_creation':
+            print('Showing loan creation route')
+            page.views.append(loan_creation_view(page))
+        elif page.route == '/investments':
+            print('Showing invetsments page')
+            page.views.append(investments_view(page))
+        elif page.route == '/borrow_money':
+            print('Showing request money pgae')
+            page.views.append(borrow_money_view(page))
+        elif page.route == '/loan_request':
+            print('showing loan request page')
+            page.views.append(loan_request_view(page)),
+        elif page.route =='/loans':
+            print('showing  loans page')
+            page.views.append(loans_view(page))
+
+        else:
+            print('showing login') 
+            page.views.append(login_view(page))
+        
+
+        page.update()
+
+    page.on_route_change = route_change
+    page.go('/login')
+
+ft.app( target = main)

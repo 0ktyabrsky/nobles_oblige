@@ -1,0 +1,57 @@
+project structure
+main - (
+    navigate between pages,
+    check user status [ active or not],
+)
+pages(
+    Login(
+        User_info
+    )
+    Dashboard( 
+
+        user name,
+        balance[dynamic],
+
+        1_button-lend money,
+        2_button-borrow money,
+
+        interactive list-lended money[button-show details],
+        interactive list-'Borrowed money'[button- show details]
+    )
+    Lend_money(
+
+        find_borower(
+            phone_number
+        )
+        loan_details(
+            Input(amount_to_lend),
+            Input(amount_to_earn),
+            INput(amount_days),
+            Calculate(APR)
+        )
+        send_money(
+            check_balance(
+                if balance < amount_to_lend:
+                    Rise error "not enough money to lend
+                else:
+                    
+            )
+            
+        )
+        create_contract(
+            lender(
+                lended_money.add(loan_details)
+                balance - amount_to_lend
+            )
+
+            
+
+        )
+    )
+    Lended_money(
+        portfolio_details()
+    )
+    Borrowed_money(
+        portfolio_details()
+    )
+)   

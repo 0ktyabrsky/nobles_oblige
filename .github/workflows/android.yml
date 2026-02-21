@@ -1,0 +1,26 @@
+name: Bild Apk
+on:
+    push:
+        branches: [main]
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v3
+            - name: Setup Python
+              uses: actions/setup-python@v5
+              with:
+                python-version: '3.11'
+            - name: Install dependences
+              run: |
+                pip install flet
+                pip install briefcase
+            - name: Build Apk
+              run: |
+                flet build apk
+            - name: Upload APK
+              uses: actions/upload-artifact@v3
+              with:
+                name: app-apk
+                path: build/apk/*.apk
