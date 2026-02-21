@@ -20,4 +20,4 @@ test_user = us.User(user_id = '996888',user_name = 'Lola')
 
 
 
-print(test_user.show_given_loans())
+

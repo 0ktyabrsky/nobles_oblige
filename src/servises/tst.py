@@ -30,7 +30,7 @@ def load_contracts(user):
         return loan.credit_details()
 list_loans = load_contracts(maro)
 
-list_l = maro.show_given_loans()
+
 
 l_s = maro.given_loans
 
