@@ -17,6 +17,9 @@ jobs:
               with:
                 flutter-version: '3.41.4'
                 cache: true
+            - name: Accept Android licenses
+              run: yes | flutter doctor --android-licenses
+
 
             - name: Install dependences
               run: |
