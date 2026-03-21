@@ -8,7 +8,8 @@ authors = [
     { name = "Flet developer", email = "you@example.com" }
 ]
 dependencies = [
-    "flet>=0.80.4"
+    "flet>=0.80.4",
+    "supabase==2.28.0"
 ]
 
 [dependency-groups]
