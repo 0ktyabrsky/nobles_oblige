@@ -55,3 +55,119 @@ pages(
         portfolio_details()
     )
 )   
+
+
+
+
+data base structure 
+TABLES
+user (
+    id,
+    name,
+    balance
+    taken loans
+    given loans,
+    transactions ( it will colect transactions history exmp: lender(user id) lend money borrower(user id) amount(500 som),
+        it has to be reference to another table  )
+)
+taken loans(
+    loan (reference to loan table )
+)
+given loans(
+    loan (reference to loan table )
+)
+
+loan (
+    id uuid,
+    lender ( reference for user id)
+    borrower ( reference for user id)
+    
+    
+    principal int (loan amount) 
+    annual_interest_rate- numeric 
+    term_days ( for how many days it has to repayed)
+    
+    total_interest numeric
+    total_expected numeric
+
+    
+    created_at 
+    repayment date : datatime ( when loan has to be repayed)
+    status varchar,
+
+
+)
+repayment
+serach loan
+send money
+check balance
+loan repayed
+borrower - loan amount
+lender + loan amount + percentages
+
+
+
+
+Test users
+"+996707143170"	"Rinat"			2000	"747363cf-0465-4ebd-a754-a678a6365cec"
+"+996888333222"	"Lola"			5000	"5292f193-db5b-497c-b507-7c3645be8c1d"
+"+996123456789"	"Grisha"		3000	"e714e05b-f525-478b-ac87-92dbeb30195e"
+"+996773022534"	"Maro"			3000	"75d29f0f-0e88-4ff7-8778-0816f666ca83"
+"+996373456898"	"Luna"			9000	"e99acda1-9f17-4a25-8e4e-43ba24fa3c69"
+
+
+total due date format (2026-03-08 05:00:00+05)
+
+
+loans 
+"c9c271cd-0be2-436f-a1eb-de6e97f6d5ce"	"747363cf-0465-4ebd-a754-a678a6365cec"	"5292f193-db5b-497c-b507-7c3645be8c1d"	400.00000	12.50000	50	5.00000	450.00000	"2026-03-03 18:45:10.972979+05"	"2026-03-08 05:00:00+05"	"pending"
+"4d5acd18-63cf-4411-9979-4f31fa6814ae"	"5292f193-db5b-497c-b507-7c3645be8c1d"	"e99acda1-9f17-4a25-8e4e-43ba24fa3c69"	1000.00000	26.07000	7		1500.00000	"2026-03-04 18:42:25.499855+05"	"2026-03-11 05:00:00+05"	"pending"
+
+
+
+p_lender UUID,
+	p_borrower UUID,
+	p_principal NUMERIC (12 , 5),
+	p_apr NUMERIC(12, 5),
+	p_term_days INTEGER,
+	p_repayment_due_date TIMESTAMPTZ,
+	p_total_interest NUMERIC(12, 5),
+	p_total_expected NUMERIC(12, 5)
+
+
+
+
+
+lending and borrowing negotiation session strusture:
+(
+import asyncio
+
+# asyncio is the restaurant manager
+# it keeps track of all the "waiting" tasks
+# and switches between them efficiently
+```
+You don't need to understand it deeply — just know that when you use `async/await`, asyncio is running in the background managing it.
+
+---
+
+## Your architecture in these terms
+```
+1. Lender opens app
+   → creates WebSocket connection
+   → joins channel 'session_123'
+
+2. Lender changes amount
+   → sends payload {'amount': 50000} to channel
+   → your SERVER receives it
+   → calculates interest, return etc
+   → sends back new payload {'amount': 50000, 'interest': 6000, 'total': 56000}
+
+3. Borrower is also in channel 'session_123'
+   → receives that payload instantly
+   → screen updates
+
+4. When lender first creates session in DB
+   → Postgres trigger fires
+   → server sends notification payload to borrower's channel
+   → popup appears
+)
