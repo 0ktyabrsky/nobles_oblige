@@ -9,7 +9,7 @@ authors = [
 ]
 dependencies = [
     "flet>=0.80.4",
-    "supabase==2.28.0"
+    "supabase==1.2.0"
 ]
 
 [dependency-groups]
