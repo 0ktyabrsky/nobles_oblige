@@ -1,6 +1,6 @@
 import flet as ft
-from Test import test_user
 from Test import mobile_wrapper
+from Test import test_user
 
 
 
@@ -24,7 +24,7 @@ def loan_request_view(page : ft.Page):
     # debugging
         print('send request is clicked')
         print(f'Current route {page.route}')
-        
+    
         # borrower = borrower.user_name
         borrower = 'Chikitita'
         P0 = int(loan_amount.value)
@@ -47,7 +47,7 @@ def loan_request_view(page : ft.Page):
         else:
             notification_title.color = ft.Colors.RED_400
         page.update()
-
+        
         # getting back to the dashboard
         
 

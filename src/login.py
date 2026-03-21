@@ -2,7 +2,10 @@ import flet as ft
 # the login function
 # the size of the phone 
 from Test import mobile_wrapper
-from servises import user as us
+from servises.user import User
+from servises.user_servises import get_user_by_phone , create_user
+from stored.store import save_user
+
 
 
 def login_view(page: ft.Page):
@@ -25,15 +28,18 @@ def login_view(page: ft.Page):
             print('Please fill in all fields')
             return 
         # creating user 
-        new_user = us.User(user_id = phone, user_name = name)
+       
+        user = User.from_phone(name, phone)
         # debugging
-        print(f'Created user: {new_user}')
-        print(f'User name: {new_user.user_name}')
-        print(f"User's phone number: {new_user.user_id}")
+        
+        print(f'User name: {user.user_name}')
+        print(f"User's phone number: {user.user_phone}")
 
         # storing users data
+        save_user(user.user_id, phone, user.user_name)
         page.data = {
-            "User" : new_user}
+            "User" : user}
+        print(user)
     
         #navigate to the dashboard
         page.go('/dashboard')

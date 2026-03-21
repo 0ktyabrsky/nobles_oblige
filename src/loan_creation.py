@@ -1,6 +1,8 @@
 import flet as ft
-from Test import test_user
+import datetime
+
 from Test import mobile_wrapper
+from Test import test_user
 
 
 def loan_creation_view(page : ft.Page): 
@@ -8,6 +10,9 @@ def loan_creation_view(page : ft.Page):
     # get user's data
 
     user = page.data.get('User') if page.data else None
+    # get date time from date picker
+    today = datetime.datetime.now()
+    due_date = None
 
 # event after back to dashboard button clicked
     def handle_back(e):
@@ -16,26 +21,31 @@ def loan_creation_view(page : ft.Page):
 
         page.go('/dashboard')
         print('Navigatet to dashboard')
-
+    
+    
 # event after send agreement click
     def handle_send_agreement(e):
 
     # debugging
         print('send agreement is clicked')
         print(f'Current route {page.route}')
-        
+    
         # borrower = borrower.user_name
         borrower = 'Chikitita'
         P0 = int(loan_amount.value)
         N = int(term.value)
         P = int(repay.value)
+
         
     # create a loan and take change balance
+
         result = user.lend_money_short(
             amount = P0,
             term = N,
             repay = P,
-            debtor = test_user)
+            debtor = test_user,
+            loan_created_date = today.strftime('%d %m %Y'),
+            loan_due_date = due_date.strftime('%d %m %Y'))
         print('Balance changed and money lended')
     # showing that loan is created
         notification_title.value = result
@@ -77,11 +87,24 @@ def loan_creation_view(page : ft.Page):
     )
 
     print('Loan amount form is created')
-
+    # loan term days
+    # forms handler
+    def on_form_change(e):
+        nonlocal due_date
+        value = e.control.value
+        term_title.value = f"Loan term days: {value}"
+        due_date = datetime.datetime.now() + datetime.timedelta(days = int(value))
+        print(f'calculated due date: {due_date}')
+        # calculate due_date by input days
+        
+        page.update()
+    
     term = ft.TextField(
         label = '',
-        width = 300
+        width = 100,
+        on_change = on_form_change
     )
+
     print('input loan term form is created')
 
     repay = ft.TextField(
@@ -89,7 +112,35 @@ def loan_creation_view(page : ft.Page):
         width = 300
     )
     print('repay form is created')
-
+    #date piker
+    
+    
+    #date picker handlers
+    def handle_change(e : ft.Event[ft.DatePicker]):
+        nonlocal due_date
+        nonlocal today
+    
+        selected_date = e.control.value
+        
+        days = (selected_date - datetime.datetime.now(datetime.timezone.utc)).days
+        print(f'Selected value got {selected_date}')
+        
+        print(f'Days calculated {days}')
+        term.value = days
+        term_title.value = f'Loan term days: {days} '
+        page.update()
+    def handle_dismissal(e: ft.Event[ft.DialogControl]):
+        page.add(ft.Text('Date picker dismissed'))
+    
+    
+    
+    
+    date_picker = ft.DatePicker(
+        first_date=datetime.datetime(year =today.year -1 , month = 1, day = 1),
+        last_date = datetime.datetime(year = today.year + 1, month = today.month ,day = 20),
+        on_change =handle_change,
+        on_dismiss = handle_dismissal
+    )
 # all field's titles
     loan_amount_title = ft.Text(
         'How much you going to lend:',
@@ -100,13 +151,13 @@ def loan_creation_view(page : ft.Page):
     print ('Title for loan amount field is created')
 
     term_title = ft.Text(
-        'Days:',
+        'Loan term days:',
         size = 15,
         weight = ft.FontWeight.NORMAL,
         text_align = ft.TextAlign.START
     )
     print ('Title for term field is created')
-
+    
     repay_title = ft.Text(
         'Your return',
         size = 15,
@@ -181,13 +232,19 @@ def loan_creation_view(page : ft.Page):
                     [
                         term_title,
                         ft.Container(height = 8),
-                        term
+                        ft.Row( controls = [term , ft.Button(
+                            content = 'Pick repay date',
+                            icon = ft.Icons.CALENDAR_MONTH,
+                            on_click = lambda e: page.show_dialog(date_picker),
+                        )
+                        ]
+                        )
                     ],
-                    horizontal_alignment  = ft.CrossAxisAlignment.CENTER,
+                    horizontal_alignment  = ft.CrossAxisAlignment.START,
                     spacing = 0
                 ),
                 ft.Container(height = 20),
-
+            
                 # Repay section
                 ft.Column(
                     [

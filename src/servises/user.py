@@ -1,10 +1,13 @@
 
 from . import credit
+from servises.user_servises import get_or_create_user
 class User:
-    def __init__(self, user_id, user_name, balance = 1000):
+    def __init__(self, user_id, user_name, user_phone,balance = 1000):
         self.user_id = user_id
         self.user_name = user_name
         self.balance = balance
+        self.user_phone = user_phone
+
         
         # given loans for creditor to see profit, commission etc
         # taken loan for debtor to see interest rate, periodic payment, schedule etc
@@ -12,7 +15,12 @@ class User:
         self.given_loans = []
       
         
-        
+    # sending data to db after creating a user class
+    @classmethod
+    def from_phone(cls , name, phone):
+        record = get_or_create_user(name, phone)
+        return cls(user_phone = record['phone_number'], user_name = record['name'] ,user_id = record['id'])
+
 
     
     def info(self): # this will return all info about user : name, id , balance, debit, credit etc
@@ -78,7 +86,7 @@ class User:
 
 
     # function lend money, expected attributes: create a loan, add loan to the user balance
-    def lend_money_short(self, amount, term, repay, debtor): # what amount, for what period, and to whom you lend money
+    def lend_money_short(self, amount, term, repay, debtor, loan_created_date, loan_due_date): # what amount, for what period, and to whom you lend money
         if amount > self.balance:
             return "You don't have enough money"
         # moving money from person to person
@@ -93,14 +101,17 @@ class User:
             P0 = amount,
             N = term,
             P = repay,
-            loan_id = f"{self.user_id}-{debtor.user_id}-{amount}-{term}-{repay}"
+            loan_id = f"{self.user_id}-{debtor.user_id}-{amount}-{term}-{repay}",
+            created_date = loan_created_date,
+            loan_due_date = loan_due_date
         )
 
         #registering a loan
         self.given_loans.append(loan)
         debtor.taken_loans.append(loan)
-        return ("Contract created succesfully!"
-        )
+        print(loan.credit_details())
+        return ("Contract created succesfully!")
+        
     # function to show every credit that user has and and all credit details, so it should looks like that: credits>>>credit>>>credit_details
     #def show_taken_loans(self):
         

@@ -14,7 +14,7 @@ loan closig function  ( when credit repayed credit status "closed" )
 
 # creating a credot class with simple compuunding 
 class CreditS:
-    def __init__(self, lender, borrower , N, P0, P, loan_id, commission = 0.2): 
+    def __init__(self, lender, borrower , N, P0, P, loan_id, created_date= None, loan_due_date = None, commission = 0.2): 
         self.lender = lender # who gives money
         self.borrower = borrower  # who get money
         self.status ='active' # loan  is open and cane be closed
@@ -22,6 +22,8 @@ class CreditS:
         self.N = N          # N- number of periods 
         self.P0 = P0        #P0 - intitial amount money to lend,
         self.P = P          #P - expected return at the end of a loan,
+        self.created_date = created_date # when loan was created
+        self.loan_due_date = loan_due_date # when return money date
         self.loan_amount = self.P0 + self.P
         
         self.commission = commission
@@ -111,7 +113,9 @@ class CreditS:
             'APR' : self.APR,
             'Days' : self.N,
             'Commission' : self.commission * self.remaining_interest,
-            'Profit' : self.remaining_interest - (self.commission * self.remaining_interest)
+            'Profit' : self.remaining_interest - (self.commission * self.remaining_interest),
+            'Loan_created' : self.created_date,
+            'Loan_due_date' : self.loan_due_date
            
         }
         

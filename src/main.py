@@ -7,6 +7,9 @@ from investments import investments_view
 from borrow_money import borrow_money_view
 from loan_request import loan_request_view
 from loans import loans_view
+from stored.store import load_user
+from  servises.user import User
+
 # from investments import investments_view
 # from loans import loans_view
 
@@ -18,6 +21,11 @@ def main(page: ft.Page):
     page.window_width = 390
     page.window_height = 844
     print("App started!")
+    #getting saved user's id
+    saved_user = load_user()
+    print(f"this is saved data{saved_user}")
+
+   
     page.title = 'My App'
     page.bgcolor = ft.Colors.BLACK
 
@@ -64,5 +72,15 @@ def main(page: ft.Page):
 
     page.on_route_change = route_change
     page.go('/login')
+    
+    if saved_user:
+        user = User.from_phone(saved_user['name'], saved_user['user_phone'])
+        if user:
+            print('user verified in db')
+            page.data = {'User': user}
+            page.go('/dashboard')
+    else:
+        print('No saved user')
+        page.go('/login')
 
-ft.app( target = main)
+ft.run(main)
