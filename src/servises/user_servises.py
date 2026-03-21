@@ -37,7 +37,7 @@ from db import supabase
 def get_user_by_phone(phone):
     response = supabase.table("users")\
         .select('*')\
-        .eq('phone_number' , phone) \
+        .eq('phone_number' , phone)\
         .execute()
     if response.data:
         return response.data[0]
