@@ -42,7 +42,7 @@ def login_view(page: ft.Page):
         print(user)
     
         #navigate to the dashboard
-        page.go('/dashboard')
+        page.push_route('/dashboard')
         print('Navigated to dashboard')
 
     

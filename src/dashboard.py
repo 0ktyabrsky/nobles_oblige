@@ -2,12 +2,16 @@ import flet as ft
 from servises.user_servises import get_user_by_phone
 from stored.store import load_user
 from Test import mobile_wrapper
+
 from servises.sessions_services import get_pending_session
 from servises.sessions_services import get_session_with_lender
-from db import supabase
-from db import get_async_client
+
 import asyncio
 import threading
+
+
+
+
 
 def dashboard_view(page : ft.Page):
 
@@ -19,8 +23,7 @@ def dashboard_view(page : ft.Page):
     saved_user = load_user()
     
     user_data = get_user_by_phone(saved_user['user_phone'])  if saved_user else None
-
-# negotiation sessions notification popup
+# showing invitation pop up to borrower
     def show_invitation_popup(session):
         #taking lender's data
         full_session = get_session_with_lender(session['id'])
@@ -34,58 +37,48 @@ def dashboard_view(page : ft.Page):
             print('The user is in the loan negotiation') # here i add negotiation session page
 
         def handle_dismiss(e):
+            
             dialog.open = False
             print('user dismissed invitation')
             page.update()
         # loan invitation alert dialo
         dialog =   ft.AlertDialog(
+            print('Pop up created'),
             title = ft.Text('Contract creation'),
             content = ft.Text(f'{lender_name}  sending contract agreement'),
             actions= [
                 ft.TextButton('Go', on_click = handle_go),
-                ft.TextButton('Dismiss' , on_click = handle_dismiss)
+                print('Go button created'),
+                ft.TextButton('Dismiss' , on_click = handle_dismiss),
+                print('Dismiss button created')
             ]
         )
         page.overlay.append(dialog)
         dialog.open = True
         page.update()
-    # realtime negotiation listener
-    def start_realtime():
-        # triger if new session creatid in session table
-        async def listen():
-            async_supabase = await get_async_client()
-            
-            def handle_insert(payload):
-                print( f'New session is recieved {payload}')
-                new_session = payload['record']
-                # cheking if it a session where user is borrower and show him popup message
-                if str(new_session['borrower_id']) ==  str(user.user_id):
-                    show_invitation_popup(new_session)
-                
-            # chanel for sessions
-            channel = async_supabase.channel('sessions_channel')
-            channel.on_postgres_changes(
-                event = 'INSERT',
-                schema = 'public',
-                table = 'sessions',
-                callback = handle_insert
-            ).subscribe()
+# searchig every 5 seccond for new session created
+    def start_polling():
+        def poll():
             while True:
-                await asyncio.sleep(1)
-        
-        def run_async():
-            asyncio.run(listen())
+                try:
+                    session = get_pending_session(user.user_id)
+                    print(f'Session got: {session}')
+                    if session:
+                        show_invitation_popup()
+                        break
+                except Exception as e:
+                    print(f'Polling error {e}')
+                threading.Event().wait(5)
+        thread = threading.Thread(target = poll, daemon = True)
+        thread.start()
+    # clean up when leaving page
+    def on_view_pop(e):
+        print('Left dashboard')
+    # start polling when dashboard loads
+    if user:
+        print('polling starts')
+        start_polling()
 
-        
-        
-        # startin realtime channel
-        def start_realtime():
-            thread =threading.Thread( target = run_async ,daemon = True )
-            thread.start()
-        # cleaning up when leaving page
-        
-            
-    start_realtime()
     # display user info
     if user_data:
         welcome_text = f'Welcome {user.user_name}!'

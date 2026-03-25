@@ -1,9 +1,11 @@
 import flet as ft
 from Test import mobile_wrapper
-from servises.user_servises import get_user_by_phone
-from servises.sessions_services import create_session
+
 from stored.store import load_user
 
+
+from servises.user_servises import get_user_by_phone
+from servises.sessions_services import create_session
 
 # User search another user to lend him money via phone number
 
@@ -30,11 +32,17 @@ def lend_money_view(page: ft.Page):
         #searching that borrower in DataBase
         borrower = get_user_by_phone(phone)
         if borrower:
-            print('borrower founed')
-            negotiation_session = create_session(lender_id = user.user_id , borrower_id = borrower['id'])
-            print(f'session_ created {negotiation_session}')
-            page.go('/loan_creation')
-            print('navigating to loan creation form')
+            if borrower['id'] == user.user_id:
+                print('Borrower id and lender id the same, must be different')
+                title.value = "You can't lend yourself"
+                title.color = ft.Colors.RED_400
+                page.update()
+            else:
+                print(f'borrower founed: {borrower}')
+                negotiation_session = create_session(lender_id = user.user_id , borrower_id = borrower['id'])
+                print(f'session_ created {negotiation_session}')
+                page.go('/loan_creation')
+                print('navigating to loan creation form')
         else:
             title.value = 'User not found.'
             title.color = ft.Colors.RED_400
