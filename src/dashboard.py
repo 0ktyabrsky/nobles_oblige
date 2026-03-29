@@ -5,9 +5,10 @@ from Test import mobile_wrapper
 
 from servises.sessions_services import get_pending_session
 from servises.sessions_services import get_session_with_lender
+from servises.sessions_services import cancel_session
+
 
 import asyncio
-import threading
 
 
 
@@ -22,79 +23,86 @@ def dashboard_view(page : ft.Page):
     print(user)
     saved_user = load_user()
     
-    user_data = get_user_by_phone(saved_user['user_phone'])  if saved_user else None
+    user_data =  None               #get_user_by_phone(saved_user['user_phone'])  if saved_user else None
 # showing invitation pop up to borrower
-    def show_invitation_popup(session):
+    async def show_invitation_popup(session):
         #taking lender's data
-        full_session = get_session_with_lender(session['id'])
+        full_session = await get_session_with_lender(session['id'])
         lender_name = full_session['users']['name'] if full_session else 'Someone'
 
         #handlers ( handle go, handle dismiss)
-        def handle_go(e):
+        async def handle_go(e):
             page.data['session_id'] = session['id']
-            dialog.open = False
-            page.update()
-            print('The user is in the loan negotiation') # here i add negotiation session page
+            print(f"User session id data stored: {page.data.get('session_id')}")
 
-        def handle_dismiss(e):
+            page.data['role'] = 'borrower'
+            print(f"User role data stored: {page.data.get('role')}")
+
+            page.data['session'] = session
+            print(f"User session data stored: {page.data.get('session')}")
             
             dialog.open = False
+            await page.push_route('/loan_creation')
+            page.update()
+            print(f'User {user.user_name} goes to the negotiation session with {lender_name}, negotioation session is stored: {page.data.get('session')}')
+            
+
+        async def handle_dismiss(e):
+            await cancel_session(full_session['id'])
+            dialog.open = False
+
+            
             print('user dismissed invitation')
             page.update()
         # loan invitation alert dialo
         dialog =   ft.AlertDialog(
-            print('Pop up created'),
             title = ft.Text('Contract creation'),
             content = ft.Text(f'{lender_name}  sending contract agreement'),
             actions= [
                 ft.TextButton('Go', on_click = handle_go),
-                print('Go button created'),
-                ft.TextButton('Dismiss' , on_click = handle_dismiss),
-                print('Dismiss button created')
+                ft.TextButton('Dismiss' , on_click = handle_dismiss)
             ]
         )
+        print('Pop up created')
         page.overlay.append(dialog)
         dialog.open = True
         page.update()
 # searchig every 5 seccond for new session created
-    def start_polling():
-        def poll():
-            while True:
-                try:
-                    session = get_pending_session(user.user_id)
-                    print(f'Session got: {session}')
-                    if session:
-                        show_invitation_popup()
-                        break
-                except Exception as e:
-                    print(f'Polling error {e}')
-                threading.Event().wait(5)
-        thread = threading.Thread(target = poll, daemon = True)
-        thread.start()
-    # clean up when leaving page
-    def on_view_pop(e):
-        print('Left dashboard')
-    # start polling when dashboard loads
-    if user:
-        print('polling starts')
-        start_polling()
+    async def start_polling():
+        active_session_id = None # tracking active sessions id
+        while True:
+            try:
+                session = await get_pending_session(user.user_id)
+                print(f'Session got: {session}')
+                if session and session['id'] != active_session_id:
+                    active_session_id = session['id']
+                    await show_invitation_popup(session)
+                elif not session:
+                    active_session_id = None #if not active session defining it as None
+            except Exception as e:
+                print(f'Polling error {e}')
+            await asyncio.sleep(5)
+                
+    # start polling when dashboard loaded
+    async def on_load():
+        if user:
+            print('polling starting')
+            await start_polling()
+
+    page.run_task(on_load)            
 
     # display user info
-    if user_data:
-        welcome_text = f'Welcome {user.user_name}!'
-        balance  = f'{user.balance} сом'
-    else:
-        welcome_text = 'Welcome!'
+
     # creating titles for info
     welcome_title = ft.Text(
-        welcome_text,
+        f"Welcome! {user.user_name}",
         size = 20,
         weight = ft.FontWeight.BOLD,
         text_align = ft.TextAlign.START
     )
     # balance
     balance_title = ft.Text(
-        balance,
+        f'{user.balance}',
         size = 50,
         weight = ft.FontWeight.NORMAL,
         text_align = ft.TextAlign.CENTER
@@ -104,17 +112,17 @@ def dashboard_view(page : ft.Page):
 
     # lend money button
     # handling pressing button
-    def handle_lend_money(e):
+    async def handle_lend_money(e):
         print('Lend money is clicked')
         print(f'Current route {page.route}')
 
         # transfering to the page for money lending
-        page.go('/lend_money')
+        await page.push_route('/lend_money')
         print('Navigating to the lend money')
 
     # button itself
     
-    lend_money = ft.ElevatedButton(
+    lend_money = ft.Button(
         content = ft.Column(
             [
                 ft.Icon( ft.Icons.ARROW_UPWARD, color = ft.Colors.WHITE),
@@ -140,16 +148,16 @@ def dashboard_view(page : ft.Page):
     
     # borrow money application button
 
-    def handle_borrow_money(e):
+    async def handle_borrow_money(e):
         print( 'Borrow money button is clicked')
         print(f"Current route {page.route}")
 
         # transfering to contract creation for borrow money reuest
-        page.go('/borrow_money')
+        await page.push_route('/borrow_money')
         print('Navigation to the money request creation page')
 
     # the button
-    borrow_money = ft.ElevatedButton(
+    borrow_money = ft.Button(
         content = ft.Column(
             [
                 ft.Icon( ft.Icons.ARROW_DOWNWARD, color = ft.Colors.WHITE),
@@ -172,16 +180,16 @@ def dashboard_view(page : ft.Page):
     
 
     # investments list button handling
-    def handle_investment_list(e):
+    async def handle_investment_list(e):
         print('Lend list is clicked')
         print(f'Current route {page.route}')
 
         # transfering user to the list of people he lended money
-        page.go('/investments')
+        await page.push_route('/investments')
         print('Navigating to the invetments list')
 
     # the button itself
-    investments = ft.ElevatedButton(
+    investments = ft.Button(
         content = ft.Text('Contracts'),
         color = ft.Colors.BLUE_300,
         on_click = handle_investment_list,
@@ -199,16 +207,16 @@ def dashboard_view(page : ft.Page):
     # your loan list button
 
     # your loan list handling
-    def handle_loans(e):
+    async def handle_loans(e):
         print('Loans list is clicked')
         print(f'Current route {page.route}')
 
         # navigating to the loan list
-        page.go('/loans')
+        await page.push_route('/loans')
         print('Navigating into loans')
 
     # the button itself
-    loans = ft.ElevatedButton(
+    loans = ft.Button(
         content = ft.Text('Loans'),
         color = ft.Colors.RED,
         on_click = handle_loans,

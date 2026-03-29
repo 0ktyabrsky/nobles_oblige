@@ -1,6 +1,7 @@
 
 from . import credit
 from servises.user_servises import get_or_create_user
+
 class User:
     def __init__(self, user_id, user_name, user_phone,balance = 1000):
         self.user_id = user_id
@@ -17,8 +18,8 @@ class User:
         
     # sending data to db after creating a user class
     @classmethod
-    def from_phone(cls , name, phone):
-        record = get_or_create_user(name, phone)
+    async def from_phone(cls , name, phone):
+        record = await get_or_create_user(name, phone)
         return cls(user_phone = record['phone_number'], user_name = record['name'] ,user_id = record['id'])
 
 

@@ -5,7 +5,9 @@ from stored.store import load_user
 
 
 from servises.user_servises import get_user_by_phone
-from servises.sessions_services import create_session
+from servises.sessions_services import (create_session, get_pending_session)
+
+
 
 # User search another user to lend him money via phone number
 
@@ -21,39 +23,90 @@ def lend_money_view(page: ft.Page):
         page.go('/dashboard')
         print('Navigated to dashboard')
     # handling search borrower button
-    def handle_search(e):
+    async def handle_search(e):
 
         print('Search is clicked')
         print(f'Current route {page.route}')
+        # disablenig button until result is sent
+        search.disabled = True
+        search.bgcolor = ft.Colors.GREY_400
+        page.update()
 
         # getting phone number to search in Data Base
         phone = borrower_phonenumber.value
-        print("Borrowers phone number is got")
-        #searching that borrower in DataBase
-        borrower = get_user_by_phone(phone)
-        if borrower:
-            if borrower['id'] == user.user_id:
-                print('Borrower id and lender id the same, must be different')
-                title.value = "You can't lend yourself"
-                title.color = ft.Colors.RED_400
-                page.update()
-            else:
-                print(f'borrower founed: {borrower}')
-                negotiation_session = create_session(lender_id = user.user_id , borrower_id = borrower['id'])
-                print(f'session_ created {negotiation_session}')
-                page.go('/loan_creation')
-                print('navigating to loan creation form')
-        else:
+        print(f"Borrowers phone number is got {phone}")
+        try:
+            #searching that borrower in DataBase
+            borrower = await get_user_by_phone(phone)
+            
+            print(f'From db borrower info: {borrower}')
+        except Exception:
+            
+            title.value = 'Network Error'
+            title.color = ft.Colors.RED_400
+            search.disabled = False
+            page.update()
+            return
+        
+
+        if not borrower:
             title.value = 'User not found.'
             title.color = ft.Colors.RED_400
             page.update()
+            return 
+        
+        if borrower['id'] == user.user_id:
+            print('Borrower id and lender id the same, must be different')
+            title.value = "You can't lend yourself"
+            title.color = ft.Colors.RED_400
+            page.update()      
 
+        try:
+            pending_session = await get_pending_session(borrower['id'])
+        except Exception:
+            title.value = 'Network Error'
+            title.color = ft.Colors.RED_400
+            search.disabled = False
+            page.update()
+            return
 
-        # here we search thise phone number in BD and if it doesnt find it, show error
-
-
-
+        if pending_session and pending_session['status'] == 'pending':
+            print("You can't create an active session with this user, it already in session with someone")
+            title.value = f"{borrower['name']} have active session, try later"
+            title.color = ft.Colors.RED_400
+            page.update()
+            return
+        
+        try:
+            negotiation_session = await create_session(lender_id = user.user_id
+                                                        , borrower_id = borrower['id'],
+                                                          role = 'lender'
+                                                          )
+        except Exception:
+                title.value = 'Failed to create session. Try again'
+                title.color= ft.Colors.RED_400
+                page.update()
+                return
+        
         # if found successfuly go the the loan agreement page
+        print(f'session_ created {negotiation_session}')
+        # storing inforation to pass it to another page
+
+        page.data['session'] = negotiation_session
+        print(f"Lender session data stored: {page.data.get('session')}")
+
+        page.data['session_id'] = negotiation_session['id']
+        print(f"Lender session id data stored: {page.data.get('session_id')}")
+
+        page.data['role'] = 'lender'
+        print(f"User role data stored: {page.data.get('role')}")
+
+        await page.push_route('/loan_creation')
+        print('navigating to loan creation form')
+
+    
+
+
     
     title= ft.Text( # explanation text " Find by phone number"
         'Find by phone number' ,

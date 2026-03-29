@@ -5,13 +5,14 @@ from Test import mobile_wrapper
 from servises.user import User
 from servises.user_servises import get_user_by_phone , create_user
 from stored.store import save_user
+import asyncio
 
 
 
 def login_view(page: ft.Page):
     
         # handeling sign in 
-    def handle_sign_in(e):
+    async def handle_sign_in(e):
         
 # Debuggin
         print('Sign in clicked')
@@ -42,7 +43,7 @@ def login_view(page: ft.Page):
         print(user)
     
         #navigate to the dashboard
-        page.push_route('/dashboard')
+        await page.push_route('/dashboard')
         print('Navigated to dashboard')
 
     
@@ -73,7 +74,7 @@ def login_view(page: ft.Page):
     print('User phone number form created')
 
     # sign in button
-    sign_in = ft.ElevatedButton(
+    sign_in = ft.Button(
         content = ft.Text("Sign in"),
         color = ft.Colors.WHITE,
         on_click = handle_sign_in,

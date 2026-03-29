@@ -16,7 +16,7 @@ from  servises.user import User
 
 # navigating all pages 
 
-def main(page: ft.Page):    
+async def main(page: ft.Page):    
     # window width and heights for android apps
     page.window_width = 390
     page.window_height = 844
@@ -71,16 +71,17 @@ def main(page: ft.Page):
         page.update()
 
     page.on_route_change = route_change
-    page.go('/login')
+    await page.push_route('/login')
     
     if saved_user:
-        user = User.from_phone(saved_user['name'], saved_user['user_phone'])
+        user = await User.from_phone(saved_user['name'], saved_user['user_phone'])
+        print(f"user info refreshed: {user.info()}")
         if user:
             print('user verified in db')
             page.data = {'User': user}
-            page.go('/dashboard')
+            await page.push_route('/dashboard')
     else:
         print('No saved user')
-        page.go('/login')
+        await page.push_route('/login')
 
 ft.run(main)

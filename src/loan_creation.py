@@ -1,75 +1,43 @@
 import flet as ft
 import datetime
+import asyncio
+
 
 from Test import mobile_wrapper
 from Test import test_user
+from servises.sessions_services import(
+    get_session,
+    update_negotiation_details,
+    set_agreement,
+    complete_session,
+    cancel_session,
+    deactivate_session
+)
 
 
 def loan_creation_view(page : ft.Page): 
 
-    # get user's data
+    # get user, session info and role
 
     user = page.data.get('User') if page.data else None
+    session = page.data.get('session')
+    session_id =page.data.get('session_id')
+    role = page.data.get('role')
+    
     # get date time from date picker
     today = datetime.datetime.now()
     due_date = None
-
-# event after back to dashboard button clicked
-    def handle_back(e):
-        print('back button is clicked')
-        print(f'Current route{page.route}')
-
-        page.go('/dashboard')
-        print('Navigatet to dashboard')
-    
-    
-# event after send agreement click
-    def handle_send_agreement(e):
-
-    # debugging
-        print('send agreement is clicked')
-        print(f'Current route {page.route}')
-    
-        # borrower = borrower.user_name
-        borrower = 'Chikitita'
-        P0 = int(loan_amount.value)
-        N = int(term.value)
-        P = int(repay.value)
-
-        
-    # create a loan and take change balance
-
-        result = user.lend_money_short(
-            amount = P0,
-            term = N,
-            repay = P,
-            debtor = test_user,
-            loan_created_date = today.strftime('%d %m %Y'),
-            loan_due_date = due_date.strftime('%d %m %Y'))
-        print('Balance changed and money lended')
-    # showing that loan is created
-        notification_title.value = result
-        # change color dependong on success
-        if 'succesfully' in result.lower():
-
-            notification_title.color = ft.Colors.GREEN_400
-        else:
-            notification_title.color = ft.Colors.RED_400
-        page.update()
-
-        # getting back to the dashboard
-        
-
-# all titles and buttons and fields 
-    main_title = ft.Text(
-        'Create a Loan',
-        size = 32,
-        weight = ft.FontWeight.BOLD,
-        text_align = ft.TextAlign.CENTER,
-        color = ft.Colors.GREY_800
+    polling_active = True
+# status text shows updates as negotiation process
+    status_text = ft.Text(
+        "Waitng borrower to join..." if role == 'lender' else "Review the details below",
+        size = 14,
+        color = ft.Colors.GREY_600,
+        text_align = ft.TextAlign.CENTER
     )
-    print('title is created')
-    
+    print('status label created')
+
+    # show success or error mesages
     notification_title = ft.Text( # will show if loan created or not
         '',
         size = 40,
@@ -79,8 +47,7 @@ def loan_creation_view(page : ft.Page):
     )
     print('notification title is created')
 
-# all fields
-    # loan amount field
+    # fields
     loan_amount = ft.TextField(
         label = '',
         width = 300
@@ -112,10 +79,17 @@ def loan_creation_view(page : ft.Page):
         width = 300
     )
     print('repay form is created')
-    #date piker
-    
-    
-    #date picker handlers
+    # pre-fill fields if the other side sent details
+    if session:
+        if session.get('amount'):
+            loan_amount.value = str(session['amount'])
+        if session.get('days'):
+            term.value = str(session['days'])
+            term_title.value = f"Loan term days: {session['days']}"
+        if session.get('return'):
+            repay.value = str(session['return'])
+
+    # date picker 
     def handle_change(e : ft.Event[ft.DatePicker]):
         nonlocal due_date
         nonlocal today
@@ -138,9 +112,34 @@ def loan_creation_view(page : ft.Page):
     date_picker = ft.DatePicker(
         first_date=datetime.datetime(year =today.year -1 , month = 1, day = 1),
         last_date = datetime.datetime(year = today.year + 1, month = today.month ,day = 20),
+        
         on_change =handle_change,
         on_dismiss = handle_dismissal
     )
+
+# event after back to dashboard button clicked
+
+        
+
+
+
+
+
+
+
+# all titles and buttons and fields 
+    main_title = ft.Text(
+        'Create a Loan',
+        size = 32,
+        weight = ft.FontWeight.BOLD,
+        text_align = ft.TextAlign.CENTER,
+        color = ft.Colors.GREY_800
+    )
+    print('title is created')
+    
+    
+
+
 # all field's titles
     loan_amount_title = ft.Text(
         'How much you going to lend:',
@@ -165,33 +164,218 @@ def loan_creation_view(page : ft.Page):
         text_align = ft.TextAlign.START
     )
     print ('Title for repay field is created')
+# send credit details button
+    send_agreement = ft.Button(
+        content = ft.Text('Send details'),
+        disabled = role == 'lender', # True for lender, False for borrower
+        color = ft.Colors.WHITE,
+
+        #button style
+        style = ft.ButtonStyle(
+            shape = ft.RoundedRectangleBorder(radius = 8),
+            bgcolor = ft.Colors.GREY_800
+        )
+
+    )
+    print('Send agreement button is created')
+# agreee button - if details is correct, hidden unltile details sent
+    agree_button = ft.Button(
+        content = ft.Text('Agree'),
+        visible = False, # True after sent agreement
+        style = ft.ButtonStyle(
+            shape = ft.RoundedRectangleBorder(radius = 8),
+            bgcolor = ft.Colors.GREEN
+        )
+    )
+    print('agree button created, not visible yet')
+# create loan button
+    create_loan_button = ft.Button(
+        content = ft.Text('Create loan'),
+        visible = False,
+        style = ft.ButtonStyle(
+            shape = ft.RoundedRectangleBorder(radius = 8),
+            bgcolor = ft.Colors.BLUE
+        )
+    )
 
 # button
     back_button = ft.IconButton(
         icon = ft.Icons.ARROW_BACK,
         icon_size = 24,
-        on_click = handle_back,
-
+        on_click = lambda e: page.run_task(go_back), 
         tooltip = 'Back to Dashboard',
         icon_color = ft.Colors.GREY_800
     )
-
-
-    send_agreement = ft.ElevatedButton(
-        content = ft.Text('Send agreement'),
-        color = ft.Colors.WHITE,
-        on_click = handle_send_agreement,
-
-        #button style
-        style = ft.ButtonStyle(
-            shape = ft.RoundedRectangleBorder(radius = 8),
-            bgcolor = ft.Colors.AMBER
+# go back — stops polling, deactivates session, then navigates 
+    async def go_back():
+        nonlocal polling_active
+        polling_active = False
+        if session_id and role:
+            await deactivate_session(session_id, role)
+            print('session is deactivated')
+            await cancel_session(session_id)
+            print('session cancelled')
+        await page.push_route('/dashboard')
+        print('Navigated to dashboard')
+    back_button.on_click = go_back
+# borrower left popup to lender notification when session is cancelled (borrower dismissed invitation)
+    async def show_borrower_left_popup():
+        def handle_ok():
+            dialog.open = False
+            page.update()
+            page.run_task(go_back)
+        # popup message dialog
+        dialog = ft.AlertDialog(
+            title = ft.Text('Borrower left'),
+            content = ft.Text('The borrower dismissed invitation. Taking you back to dashboard'),
+            actions = [ft.TextButton('Ok', on_click = handle_ok)]
         )
+        page.overlay.append(dialog)
+        dialog.open = True
+        page.update()
+    # polling — both sides watch the same session, but for different things ─
+    async def start_polling():
+        nonlocal polling_active
+        while polling_active:
+            try:
+                # getting current session info
+                s = await get_session(session_id)
 
-    )
+                if not s or s.get('status') =='canceled':
+                    if role == 'lender':
+                        await show_borrower_left_popup()
+                    return
+
+                # lender fuctions
+                if role == 'lender':
+                    # unlock send agreement button if borrwer joined, changing status
+                    if s.get('borrower_active') and send_agreement.disabled:
+                        send_agreement.disabled = False
+                        send_agreement.style.bgcolor = ft.Colors.AMBER
+                        status_text.value = 'Borrower is here, you can now send agreement details'
+                        page.update()
+                    
+                    # show agree when borrower agreed 
+                    if s.get('borrower_agree') and not agree_button.visible:
+                        agree_button.visible = True
+                        status_text.value = 'Borrower agreed, Press Agree to confurm the deal'
+                        page.update()
+
+                # borrower functions
+                if role == 'borrower':
+
+                    # pre-fill form when lenders sent numbers
+                    if s.get('amount') and not loan_amount.value:
+                        loan_amount.value = str(s['amount'])
+                        term.value= str(s['days'])
+                        term_title.value = f"Loan term days: {s['days']}"
+                        repay.value = str(s['return'])
+                        page.update()
+                    
+                     # show Agree when lender has agreed
+                    if s.get('lender_agree') and not agree_button.visible:
+                        agree_button.visible = True
+                        status_text.value = 'Lender agreed, Press Agree to confurm the deal'
+                        page.update()
+            except Exception as e:
+                print(f"polling error: {e}")
+
+            await asyncio.sleep(5)
+    
+    # send details
+
+# event after send agreement click
+    async def handle_send_agreement(e):
+
+    # debugging
+        print('send agreement is clicked')
+        print(f'Current route {page.route}')
+        
+        if not loan_amount.value or not term.value or not repay.value:
+            notification_title.value = 'Please fill all fields'
+            notification_title.color = ft.Colors.RED_400
+            page.update()
+            return
+        await update_negotiation_details(
+            session_id =session_id,
+            loan_amount = int(loan_amount.value),
+            days = str(term.value),
+            loan_due_date = due_date.isoformat() if due_date else None,
+            return_amount = int(repay.value)
+        )
+        agree_button.visible = True
+        status_text.value = 'Details sent- waiting other side to agree'
+        page.update()
+    send_agreement.on_click = handle_send_agreement
+
+        
+    async def handle_create_loan(e):
+        await complete_session(session_id)
+        # borrower = borrower.user_name
+        borrower = 'Chikitita'
+        P0 = int(loan_amount.value)
+        N = int(term.value)
+        P = int(repay.value)
+
+        
+    # create a loan and take change balance
+
+        result = user.lend_money_short(
+            amount = P0,
+            term = N,
+            repay = P,
+            debtor = test_user,
+            loan_created_date = today.strftime('%d %m %Y'),
+            loan_due_date = due_date.strftime('%d %m %Y'))
+        print('Balance changed and money lended')
+    # showing that loan is created
+        notification_title.value = result
+        # change color dependong on success
+        if 'succesfully' in result.lower():
+
+            notification_title.color = ft.Colors.GREEN_400
+        else:
+            notification_title.color = ft.Colors.RED_400
+        page.update()
+        await asyncio.sleep(2)
+        await go_back()
+    create_loan_button.on_click = handle_create_loan
+
+    # agree actions
+    async def handle_agree(e):
+        s = await set_agreement(session_id, role)
+        
+        if s.get('lender_agree') and s.get('borrower_agree'):
+            # both agree we hide Send and agre , show Loan creation button
+            send_agreement.visible = False
+            agree_button.visible = False
+
+            # view depend on role ( if lender show Create loan if borrwer just wait)
+            if role == 'lender':
+                create_loan_button.visible = True
+                status_text.value = 'Both agreed, Press Create loan to finalize'
+                
+            else:
+                # borrower side- just show confirmation
+                status_text.value = "Both agreed!, Waiting for lender confirmation"
+                loan_amount.read_only = True
+                term.read_only = True
+                repay.read_only = True
+            page.update()
+
+        else:
+            # only one side agreed so far
+            send_agreement.visible = False
+            agree_button.visible = False
+            status_text.value = 'You agreed, waiting for other side'
+            page.update()
+    agree_button.on_click = handle_agree
+
+    # start polling when page loads
+    page.run_task(start_polling)
 
 
-    print('Send agreement button is created')
+
 
 # all containers
     
@@ -233,7 +417,7 @@ def loan_creation_view(page : ft.Page):
                         term_title,
                         ft.Container(height = 8),
                         ft.Row( controls = [term , ft.Button(
-                            content = 'Pick repay date',
+                            content = ft.Text('Pick repay date'),
                             icon = ft.Icons.CALENDAR_MONTH,
                             on_click = lambda e: page.show_dialog(date_picker),
                         )
@@ -285,9 +469,12 @@ def loan_creation_view(page : ft.Page):
                     spacing = 16,
                     controls = [
                         header,
+                        status_text,
                         notification_title,
                         loan_creation_form,
                         send_agreement,
+                        agree_button,
+                        create_loan_button,
                         ft.Container(height = 20)
                     ],
                     horizontal_alignment = ft.CrossAxisAlignment.CENTER
