@@ -35,3 +35,12 @@ async def get_or_create_user(name, phone):
         record = await create_user(name, phone)
     return record
 
+async def get_user_by_id(user_id):
+    response = await client.get(
+        f"{URL}/rest/v1/users",
+        headers = HEADERS,
+        params = {'id' : f"eq.{user_id}",
+                  'select': '*'}
+    )
+    data = response.json()
+    return data[0] if data else None

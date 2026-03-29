@@ -6,6 +6,7 @@ from Test import mobile_wrapper
 from servises.sessions_services import get_pending_session
 from servises.sessions_services import get_session_with_lender
 from servises.sessions_services import cancel_session
+from servises.sessions_services import update_session
 
 
 import asyncio
@@ -32,6 +33,7 @@ def dashboard_view(page : ft.Page):
 
         #handlers ( handle go, handle dismiss)
         async def handle_go(e):
+            await update_session(session['id'], 'borrower')
             page.data['session_id'] = session['id']
             print(f"User session id data stored: {page.data.get('session_id')}")
 

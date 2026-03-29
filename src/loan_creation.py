@@ -13,6 +13,7 @@ from servises.sessions_services import(
     cancel_session,
     deactivate_session
 )
+from servises.user_servises import get_user_by_id
 
 
 def loan_creation_view(page : ft.Page): 
