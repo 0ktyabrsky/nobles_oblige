@@ -32,6 +32,6 @@ async def create_user(name, phone):
 async def get_or_create_user(name, phone):
     record = await get_user_by_phone(phone)
     if not record:
-        record = create_user(name, phone)
+        record = await create_user(name, phone)
     return record
 

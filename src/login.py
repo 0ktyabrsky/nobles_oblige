@@ -30,7 +30,7 @@ def login_view(page: ft.Page):
             return 
         # creating user 
        
-        user = User.from_phone(name, phone)
+        user = await User.from_phone(name, phone)
         # debugging
         
         print(f'User name: {user.user_name}')

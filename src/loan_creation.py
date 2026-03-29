@@ -117,15 +117,6 @@ def loan_creation_view(page : ft.Page):
         on_dismiss = handle_dismissal
     )
 
-# event after back to dashboard button clicked
-
-        
-
-
-
-
-
-
 
 # all titles and buttons and fields 
     main_title = ft.Text(
