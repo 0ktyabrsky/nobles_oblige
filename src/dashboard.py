@@ -24,7 +24,7 @@ def dashboard_view(page : ft.Page):
     print(user)
     saved_user = load_user()
     
-    user_data =  None               #get_user_by_phone(saved_user['user_phone'])  if saved_user else None
+    user_data =  None               
 # showing invitation pop up to borrower
     async def show_invitation_popup(session):
         #taking lender's data

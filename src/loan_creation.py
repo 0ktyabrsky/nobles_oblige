@@ -16,6 +16,7 @@ from servises.sessions_services import(
 from servises.user_servises import get_user_by_id
 
 
+
 def loan_creation_view(page : ft.Page): 
 
     # get user, session info and role
@@ -24,7 +25,7 @@ def loan_creation_view(page : ft.Page):
     session = page.data.get('session')
     session_id =page.data.get('session_id')
     role = page.data.get('role')
-    
+    borrower_user = None
     # get date time from date picker
     today = datetime.datetime.now()
     due_date = None
@@ -55,8 +56,10 @@ def loan_creation_view(page : ft.Page):
     )
 
     print('Loan amount form is created')
-    # loan term days
+# creating borrower user from db data
+
     # forms handler
+
     def on_form_change(e):
         nonlocal due_date
         value = e.control.value
@@ -225,6 +228,7 @@ def loan_creation_view(page : ft.Page):
         page.overlay.append(dialog)
         dialog.open = True
         page.update()
+    # on load function to get boorower data from db and create and object 
     # polling — both sides watch the same session, but for different things ─
     async def start_polling():
         nonlocal polling_active
@@ -240,10 +244,24 @@ def loan_creation_view(page : ft.Page):
 
                 # lender fuctions
                 if role == 'lender':
+                    # watch for borrower sending updated number
+                    if s.get('amount'):
+                        details_changed = (
+                            loan_amount.value != str(s['amount']) or
+                            term.value != str(s['days']) or
+                            repay.value != str(s['return'])
+                        )
+                        if details_changed:
+                            loan_amount.value = str(s['amount'])
+                            term.value = str(s['days'])
+                            term_title.value = f"Loan term days: {s['days']}"
+                            repay.value = str(s['return'])
+                            status_text.value = 'Borrower sent updated details'
+                            page.update()
                     # unlock send agreement button if borrwer joined, changing status
                     if s.get('borrower_active') and send_agreement.disabled:
                         send_agreement.disabled = False
-                        send_agreement.style.bgcolor = ft.Colors.AMBER
+                        
                         status_text.value = 'Borrower is here, you can now send agreement details'
                         page.update()
                     
@@ -255,19 +273,36 @@ def loan_creation_view(page : ft.Page):
 
                 # borrower functions
                 if role == 'borrower':
+                    # show if lender send another change
+                    if s.get('amount'):
+                        details_changed = (
+                            loan_amount.value != str(s['amount']) or
+                            term.value != str(s['days']) or
+                            repay.value != str(s['return'])
+                        )
+                        if details_changed:
+                            loan_amount.value = str(s['amount'])
+                            term.value = str(s['days'])
+                            term_title.value = f"Loan term days: {s['days']}"
+                            repay.value = str(s['return'])
+                            status_text.value = 'Lender sent updated details'
+                            page.update()
 
-                    # pre-fill form when lenders sent numbers
-                    if s.get('amount') and not loan_amount.value:
-                        loan_amount.value = str(s['amount'])
-                        term.value= str(s['days'])
-                        term_title.value = f"Loan term days: {s['days']}"
-                        repay.value = str(s['return'])
-                        page.update()
+
                     
                      # show Agree when lender has agreed
                     if s.get('lender_agree') and not agree_button.visible:
                         agree_button.visible = True
                         status_text.value = 'Lender agreed, Press Agree to confurm the deal'
+                        page.update()
+                    # lock borrower view
+                    if s.get('lender_agree') and s.get('borrower_agree'):
+                        send_agreement.visible = False
+                        agree_button.visible = False
+                        loan_amount.read_only = True
+                        term.read_only = True
+                        repay.read_only = True
+                        status_text.value = 'Both agreed, waiting for lender to confirm'
                         page.update()
             except Exception as e:
                 print(f"polling error: {e}")
