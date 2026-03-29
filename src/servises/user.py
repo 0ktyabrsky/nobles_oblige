@@ -1,6 +1,7 @@
 
 from . import credit
-from servises.user_servises import get_or_create_user
+from servises.user_servises import get_or_create_user , update_balance
+from servises.loan_services import insert_loan 
 
 class User:
     def __init__(self, user_id, user_name, user_phone,balance = 1000):
@@ -87,7 +88,7 @@ class User:
 
 
     # function lend money, expected attributes: create a loan, add loan to the user balance
-    def lend_money_short(self, amount, term, repay, debtor, loan_created_date, loan_due_date): # what amount, for what period, and to whom you lend money
+    async def lend_money_short(self, amount, term, repay, debtor, loan_due_date, loan_session_id): # what amount, for what period, and to whom you lend money
         if amount > self.balance:
             return "You don't have enough money"
         # moving money from person to person
@@ -103,7 +104,6 @@ class User:
             N = term,
             P = repay,
             loan_id = f"{self.user_id}-{debtor.user_id}-{amount}-{term}-{repay}",
-            created_date = loan_created_date,
             loan_due_date = loan_due_date
         )
 
@@ -111,6 +111,20 @@ class User:
         self.given_loans.append(loan)
         debtor.taken_loans.append(loan)
         print(loan.credit_details())
+        # presist in db (updating balance , inserting loans)
+        await update_balance(self.user_id, self.balance)
+        await update_balance(debtor.user_id, debtor.balance)
+        await insert_loan(
+            lender_id = self.user_id,
+            borrower_id = debtor.user_id,
+            loan_amount = amount,
+            days = term,
+            return_amount = repay,
+            due_date = loan_due_date,
+            session_id = loan_session_id
+            
+        )
+
         return ("Contract created succesfully!")
         
     # function to show every credit that user has and and all credit details, so it should looks like that: credits>>>credit>>>credit_details

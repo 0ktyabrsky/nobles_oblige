@@ -39,6 +39,7 @@ def lend_money_view(page: ft.Page):
             #searching that borrower in DataBase
             borrower = await get_user_by_phone(phone)
             
+            
             print(f'From db borrower info: {borrower}')
         except Exception:
             
@@ -100,6 +101,9 @@ def lend_money_view(page: ft.Page):
 
         page.data['role'] = 'lender'
         print(f"User role data stored: {page.data.get('role')}")
+
+        page.data['borrower'] = borrower
+        print(f"Borrower data stored: {page.data.get('borrower')}")
 
         await page.push_route('/loan_creation')
         print('navigating to loan creation form')

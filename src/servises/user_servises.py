@@ -42,5 +42,19 @@ async def get_user_by_id(user_id):
         params = {'id' : f"eq.{user_id}",
                   'select': '*'}
     )
+    print('STATUS', response.status_code)
+    print('BODY', response.text)
+
     data = response.json()
     return data[0] if data else None
+async def update_balance(user_id, new_balance):
+    response = await client.patch(
+        f'{URL}/rest/v1/users',
+        headers = {**HEADERS, 'Prefer' : 'return=representation'},
+        params = {'id': f'eq.{user_id}'},
+        json = {'balance' : new_balance}
+    )
+    print('STATUS', response.status_code)
+    print('BODY', response.text)
+    
+

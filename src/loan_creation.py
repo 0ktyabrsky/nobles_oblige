@@ -14,7 +14,7 @@ from servises.sessions_services import(
     deactivate_session
 )
 from servises.user_servises import get_user_by_id
-
+from servises.user import User
 
 
 def loan_creation_view(page : ft.Page): 
@@ -25,7 +25,12 @@ def loan_creation_view(page : ft.Page):
     session = page.data.get('session')
     session_id =page.data.get('session_id')
     role = page.data.get('role')
-    borrower_user = None
+    borrower_data = page.data('borrower')
+    borrower_user = User(
+        user_id = borrower_data['id'],
+        user_name = borrower_data['name'],
+        balance = borrower_data['balance']
+    )
     # get date time from date picker
     today = datetime.datetime.now()
     due_date = None
@@ -229,6 +234,7 @@ def loan_creation_view(page : ft.Page):
         dialog.open = True
         page.update()
     # on load function to get boorower data from db and create and object 
+        
     # polling — both sides watch the same session, but for different things ─
     async def start_polling():
         nonlocal polling_active
@@ -338,22 +344,17 @@ def loan_creation_view(page : ft.Page):
         
     async def handle_create_loan(e):
         await complete_session(session_id)
-        # borrower = borrower.user_name
-        borrower = 'Chikitita'
-        P0 = int(loan_amount.value)
-        N = int(term.value)
-        P = int(repay.value)
 
-        
     # create a loan and take change balance
 
-        result = user.lend_money_short(
-            amount = P0,
-            term = N,
-            repay = P,
-            debtor = test_user,
-            loan_created_date = today.strftime('%d %m %Y'),
-            loan_due_date = due_date.strftime('%d %m %Y'))
+        result = await user.lend_money_short(
+            amount = int(loan_amount.value),
+            term = int(term.value),
+            repay = int(repay.value),
+            debtor = borrower_user,
+            loan_due_date = due_date.strftime('%d %m %Y') if due_date else None,
+            loan_session_id = session_id
+            )
         print('Balance changed and money lended')
     # showing that loan is created
         notification_title.value = result
@@ -363,6 +364,8 @@ def loan_creation_view(page : ft.Page):
             notification_title.color = ft.Colors.GREEN_400
         else:
             notification_title.color = ft.Colors.RED_400
+        create_loan_button.visible = False,
+        status_text.value = 'Loan created'
         page.update()
         await asyncio.sleep(2)
         await go_back()
