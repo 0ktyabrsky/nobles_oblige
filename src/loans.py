@@ -18,10 +18,10 @@ def loans_view(page : ft.Page):
 
 # handlers
     # handling back
-    def handle_back(e):
+    async def handle_back(e):
         print('Back button is clicked')
         print(f'Current route {page.route}')
-        page.go('/dashboard')
+        await page.push_route('/dashboard')
         print("Navigating to dashboard")
 
 
@@ -152,6 +152,10 @@ def loans_view(page : ft.Page):
     # repay button handler 
     def handle_repay(e , captured_loan , btn, status):
             print('repay loan is clicked')
+            list_loan_notification.value = 'Loan repayment is not working currently'
+            list_loan_notification.color=  ft.Colors.RED_400
+            page.update()
+            '''
             result = user.repay_debt( captured_loan.payment_amount , captured_loan.loan_id)
             print('repay loan function started')
             print(f'result {result}')
@@ -183,6 +187,7 @@ def loans_view(page : ft.Page):
                 # update page
                 
                 print('updating all page')
+                
                
                 page.update()
                 
@@ -193,8 +198,7 @@ def loans_view(page : ft.Page):
                 list_loan_notification.value = result
                 list_loan_notification.color = ft.Colors.RED
                 list_loan_notification.update()
-    
-    
+                '''
     # loading loan information
     async def show_loans():
         loans = await get_loans_by_borrower(user.user_id)
@@ -209,10 +213,15 @@ def loans_view(page : ft.Page):
         for loan in loans:
             lender_name = loan['users']['name']
             amount = float(loan['amount'])
+            print(f'This is amount: {amount}')
             return_amount = float(loan['return_amount'])
+            print(f'this is return amount: {return_amount}')
             interest = return_amount - amount
-            total_debt +=return_amount
-            total_interest += interest
+            print(f"this is interest: {interest}")
+            total_debt = return_amount + amount
+            print(f"this is total debt: {total_debt}")
+            total_interest = return_amount
+            print(f"this is total interest: {total_interest}")
 
             
             is_repayed = loan['status'] == 'closed'

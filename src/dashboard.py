@@ -164,7 +164,8 @@ def dashboard_view(page : ft.Page):
         print(f"Current route {page.route}")
 
         # transfering to contract creation for borrow money reuest
-        await page.push_route('/borrow_money')
+        welcome_title.value = 'This function will be updated in next versions'
+        #await page.push_route('/borrow_money')
         print('Navigation to the money request creation page')
 
     # the button
