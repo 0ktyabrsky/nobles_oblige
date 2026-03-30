@@ -1,18 +1,20 @@
 
 import flet as ft
 from Test import mobile_wrapper
+import asyncio
+from servises.loan_services import get_loans_by_borrower
+
 
 def loans_view(page : ft.Page):
 # taking all user data
     user = page.data.get('User') if page.data else None
-    user_info = user.info()
-    user_loans = user.taken_loans
-
-
+    
+    loan_list_column = ft.Column(spacing = 10)
 # User's states     
-    interest_text = f'{user_info['TotalInterest']}'
-    loans_text = f'{user_info['LoanNumber']}'
-    total_debt_text = f'{user_info['TotalDebt']}'
+    interest_text = '0'
+    loans_text = '0'
+    total_debt_text = '0'
+
 
 # handlers
     # handling back
@@ -194,58 +196,63 @@ def loans_view(page : ft.Page):
     
     
     # loading loan information
-    def show_loans(user_loans):
-        loan_rows = []
-        if user_loans:
-            for loan in user_loans:
-                print(f"showing this loans and Id's {loan.loan_id} ")
-                data = loan.borrower_view()
-                # cheking button status
-                is_repayed = data['Status'] == 'closed'
-                # getting loan status info
-                loan_status = ft.Text(data['Status'])
-                print(is_repayed)
+    async def show_loans():
+        loans = await get_loans_by_borrower(user.user_id)
+        if not loans:
+            list_loan_notification.value = list_loan_notification.value = "You don't have loans"
+            page.update()
+            return
+        total_debt = 0
+        total_interest = 0
+
+        
+        for loan in loans:
+            lender_name = loan['users']['name']
+            amount = float(loan['amount'])
+            return_amount = float(loan['return_amount'])
+            interest = return_amount - amount
+            total_debt +=return_amount
+            total_interest += interest
+
+            
+            is_repayed = loan['status'] == 'closed'
+            
+            loan_status = ft.Text(loan['status'])
+            print(is_repayed)
+            
+            # creating each button for each loan
+            repay_button = ft.ElevatedButton(
+                content = ft.Text( 'repayed' if is_repayed else 'repay', color = ft.Colors.WHITE),
+                bgcolor = ft.Colors.GREY_400 if is_repayed else ft.Colors.GREEN,
+                disabled = is_repayed
                 
-                # creating each button for each loan
-                repay_button = ft.ElevatedButton(
-                    content = ft.Text( 'repayed' if is_repayed else 'repay', color = ft.Colors.WHITE),
-                    bgcolor = ft.Colors.GREY_400 if is_repayed else ft.Colors.GREEN,
-                    disabled = is_repayed
-                    
-                )
+            )
+            
+            repay_button.on_click = lambda e , captured_loan = loan , btn = repay_button, status = loan_status: handle_repay(e , captured_loan , btn , status)
+
+            # creating a container for each loan
+            row = ft.Row(
+                [
+                    ft.Text( lender_name, weight ='bold'),
+                    ft.Text(f"{amount} сом"),
+                    loan_status,
+                    repay_button
+                ], alignment = 'spaceBetween'
+            )
+            loan_list_column.controls.append(row)
+        
+        total_debt_card.content.controls[0].value = str(round(total_debt, 2))
+        interest_card.content.controls[0].value = str(round(total_interest, 2))
+        loans_card.content.controls[0].value = str(len(loans))
+        page.update()
+    page.run_task(show_loans)
+        
+ 
+    
                 
-                repay_button.on_click = lambda e , captured_loan = loan , btn = repay_button, status = loan_status: handle_repay(e , captured_loan , btn , status)
-
-                # creating a container for each loan
-                row = ft.Row(
-                    [
-                        ft.Text( data['Lender'], weight ='bold'),
-                        ft.Text(f"{data['AmountGet']} сом"),
-                        loan_status,
-                        repay_button
-                    ], alignment = 'spaceBetween'
-                )
-                loan_rows.append(row)
-
-        else:
-            list_loan_notification.value = "You don't have loans"
-        return loan_rows
-    # repay button 
-    
-
-
-    
-    
-    
-    
-
-                 
     
     # main container
-    loan_list = ft.Column(
-        controls = show_loans(user_loans),
-        spacing = 10
-    )
+    
 
     return ft.View(
         route = '/loans',
@@ -258,7 +265,7 @@ def loans_view(page : ft.Page):
                         stats_container,
                         list_loan_title,
                         list_loan_notification,
-                        loan_list
+                        loan_list_column
                     ]
                 )
             )

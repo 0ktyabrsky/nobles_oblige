@@ -26,7 +26,7 @@ async def create_session(lender_id, borrower_id, role):
     print('BODY', response.text)
     return response.json()[0]
 
-async def update_negotiation_details(session_id, loan_amount, days, loan_due_date, return_amount):
+async def update_negotiation_details(session_id, loan_amount, days, loan_due_date, return_amount, updated_by):
     response = await client.patch(
         f"{URL}/rest/v1/sessions",
         headers = {**HEADERS, 'Prefer' : "return=representation"},
@@ -34,7 +34,8 @@ async def update_negotiation_details(session_id, loan_amount, days, loan_due_dat
         json = {'amount': loan_amount,
                  'days' : days,
                  "due_date" : loan_due_date,
-                  "return" : return_amount}
+                  "return" : return_amount,
+                  'last_updated_by': updated_by}
     )
     print('STATUS', response.status_code)
     print('BODY', response.text)

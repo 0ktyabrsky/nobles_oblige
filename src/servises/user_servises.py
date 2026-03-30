@@ -56,5 +56,6 @@ async def update_balance(user_id, new_balance):
     )
     print('STATUS', response.status_code)
     print('BODY', response.text)
+    return response.json()[0]
     
 

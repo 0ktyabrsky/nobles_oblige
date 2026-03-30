@@ -33,6 +33,9 @@ def dashboard_view(page : ft.Page):
 
         #handlers ( handle go, handle dismiss)
         async def handle_go(e):
+            nonlocal dashboard_polling_active
+            dashboard_polling_active = False
+
             await update_session(session['id'], 'borrower')
             page.data['session_id'] = session['id']
             print(f"User session id data stored: {page.data.get('session_id')}")
@@ -70,12 +73,14 @@ def dashboard_view(page : ft.Page):
         dialog.open = True
         page.update()
 # searchig every 5 seccond for new session created
+    dashboard_polling_active = True
     async def start_polling():
+        nonlocal dashboard_polling_active
         active_session_id = None # tracking active sessions id
-        while True:
+        while dashboard_polling_active:
             try:
                 session = await get_pending_session(user.user_id)
-                print(f'Session got: {session}')
+                print(f'dashboard pollig:Session got: {session}')
                 if session and session['id'] != active_session_id:
                     active_session_id = session['id']
                     await show_invitation_popup(session)
@@ -84,7 +89,11 @@ def dashboard_view(page : ft.Page):
             except Exception as e:
                 print(f'Polling error {e}')
             await asyncio.sleep(5)
-                
+    # endint polling when leaving
+    def on_leave_dashboard():
+        nonlocal dashboard_polling_active 
+        dashboard_polling_active = False
+
     # start polling when dashboard loaded
     async def on_load():
         if user:

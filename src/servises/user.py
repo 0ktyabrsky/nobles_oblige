@@ -4,7 +4,7 @@ from servises.user_servises import get_or_create_user , update_balance
 from servises.loan_services import insert_loan 
 
 class User:
-    def __init__(self, user_id, user_name, user_phone,balance = 1000):
+    def __init__(self, user_id, user_name, user_phone,balance):
         self.user_id = user_id
         self.user_name = user_name
         self.balance = balance
@@ -21,7 +21,7 @@ class User:
     @classmethod
     async def from_phone(cls , name, phone):
         record = await get_or_create_user(name, phone)
-        return cls(user_phone = record['phone_number'], user_name = record['name'] ,user_id = record['id'])
+        return cls(user_phone = record['phone_number'], user_name = record['name'] ,user_id = record['id'], balance = record['balance'])
 
 
     

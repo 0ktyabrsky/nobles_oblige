@@ -1,25 +1,27 @@
 import flet as ft
 from Test import mobile_wrapper
+import asyncio
+from servises.loan_services import get_loans_by_lender
 
 def investments_view(page : ft.Page):
 # taking all user data
     user = page.data.get('User') if page.data else None
-    user_info = user.info()
-    user_contracts = user.given_loans
+    
+    contract_list_column = ft.Column(spacing = 10)
 
 
 # User's states     
-    margin_text = f'{user_info['Margin']}'
-    loans_text = f'{user_info['TotalContracts']}'
-    expected_return_text = f'{user_info['ExpectedReturn']}'
-    total_lent_text = f'{user_info['Total_lent']}'
+    margin_text = '...'
+    loans_text = '...'
+    expected_return_text = '...'
+    total_lent_text = '...'
 
 # handlers
     # handling back
-    def handle_back(e):
+    async def handle_back(e):
         print('Back button is clicked')
         print(f'Current route {page.route}')
-        page.go('/dashboard')
+        await page.push_route('/dashboard')
         print("Navigating to dashboard")
 
     # hadling loan details
@@ -155,30 +157,41 @@ def investments_view(page : ft.Page):
         text_align = ft.TextAlign.START)
     
     # loading loan information
-    def show_contracts(user_contracts):
-        contract_rows = []
-        if user_contracts:
-            for contract in user_contracts:
-                data = contract.lender_view()
-                # creating a container for each loan
-                row = ft.Row(
-                    [
-                        ft.Text( data['Borrower'], weight ='bold'),
-                        ft.Text(f"{data['AmountLent']} сом"),
-                        ft.Text( data['Status']),
-                        ft.ElevatedButton('more')
-                    ], alignment = 'spaceBetween'
-                )
-                contract_rows.append(row)
-
-        else:
+    async def show_contracts():
+        contracts = await get_loans_by_lender(user.user_id)
+        if not contracts:
             list_loan_notification.value = "You don't create contracts yet"
-        return contract_rows
+            page.update()
+            return
+        
+        total_lent = sum( c['amount'] for c in contracts)
+        
+        margin = sum( c['return_amount'] for c in contracts)
+        expected_return = margin * 0.8
+        total_contracts = len(contracts)
+
+
+        total_lent_card.content.controls[0].value = str(round(total_lent, 2))
+        expected_return_card.content.controls[0].value = str(round(expected_return, 2))
+        margin_card.content.controls[0].value = str(margin)
+        loans_card.content.controls[0].value = str(total_contracts)
+
+        for contract in contracts:
+            borrower_name = contract['users']['name']
+            row = ft.Row(
+                [
+                    ft.Text( borrower_name, weight ='bold'),
+                    ft.Text(f"{contract['amount']} сом"),
+                    ft.Text( contract['status']),
+                    ft.Button('more')
+                ], 
+                alignment = 'spaceBetween'
+            )
+            contract_list_column.controls.append(row)
+        
+        page.update()
+    page.run_task(show_contracts)
     # Contracts list's Container
-    contract_list = ft.Column(
-        controls = show_contracts(user_contracts),
-        spacing = 10
-    )
     # main container
     
 
@@ -193,7 +206,7 @@ def investments_view(page : ft.Page):
                         stats_container,
                         list_loan_title,
                         list_loan_notification,
-                        contract_list
+                        contract_list_column
                     ]
                 )
             )

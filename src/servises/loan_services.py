@@ -19,4 +19,28 @@ async def insert_loan(lender_id, borrower_id, loan_amount, days, return_amount, 
     )
     print('STATUS', response.status_code)
     print('BODY', response.text)
-    return response.jsom()[0]
+    return response.json()[0]
+
+
+async def get_loans_by_lender(lender_id):
+    response = await client.get(
+        f"{URL}/rest/v1/loans",
+        headers = HEADERS,
+        params = {
+            'lender_id' : f"eq.{lender_id}",
+            'select' : '*,users!fk_borrower_id(name)'
+        }
+    )
+    data = response.json()
+    return data if data else []
+async def get_loans_by_borrower(borrower_id):
+    response = await client.get(
+        f"{URL}/rest/v1/loans",
+        headers = HEADERS,
+        params = {
+            'borrower_id' : f'eq.{borrower_id}',
+            'select' : '*, users!fk_lender_id(name)'
+        }
+    )
+    data = response.json()
+    return data if data else []

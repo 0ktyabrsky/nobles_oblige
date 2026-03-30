@@ -4,7 +4,7 @@ import asyncio
 
 
 from Test import mobile_wrapper
-from Test import test_user
+
 from servises.sessions_services import(
     get_session,
     update_negotiation_details,
@@ -15,6 +15,7 @@ from servises.sessions_services import(
 )
 from servises.user_servises import get_user_by_id
 from servises.user import User
+from servises.loan_services import insert_loan
 
 
 def loan_creation_view(page : ft.Page): 
@@ -25,12 +26,7 @@ def loan_creation_view(page : ft.Page):
     session = page.data.get('session')
     session_id =page.data.get('session_id')
     role = page.data.get('role')
-    borrower_data = page.data('borrower')
-    borrower_user = User(
-        user_id = borrower_data['id'],
-        user_name = borrower_data['name'],
-        balance = borrower_data['balance']
-    )
+
     # get date time from date picker
     today = datetime.datetime.now()
     due_date = None
@@ -55,9 +51,18 @@ def loan_creation_view(page : ft.Page):
     print('notification title is created')
 
     # fields
+    loan_amount_focused = False
+    def on_loan_amount_focused(e):
+        nonlocal loan_amount_focused
+        loan_amount_focused = True
+    def on_loan_amount_blur(e):
+        nonlocal loan_amount_focused
+        loan_amount_focused = False
     loan_amount = ft.TextField(
         label = '',
-        width = 300
+        width = 300,
+        on_focus = on_loan_amount_focused,
+        on_blur = on_loan_amount_blur
     )
 
     print('Loan amount form is created')
@@ -68,21 +73,37 @@ def loan_creation_view(page : ft.Page):
     def on_form_change(e):
         nonlocal due_date
         value = e.control.value
+        if not value:
+            return
         term_title.value = f"Loan term days: {value}"
         due_date = datetime.datetime.now() + datetime.timedelta(days = int(value))
         print(f'calculated due date: {due_date}')
         # calculate due_date by input days
         
         page.update()
-    
+    term_focused = False
+    def on_term_focus(e):
+        nonlocal term_focused
+        term_focused = True
+    def on_term_blur (e):
+        nonlocal term_focused
+        term_focused = False
     term = ft.TextField(
         label = '',
         width = 100,
-        on_change = on_form_change
+        on_change = on_form_change,
+        on_focus = on_term_focus,
+        on_blur = on_term_blur
     )
 
     print('input loan term form is created')
-
+    repay_focused = False
+    def on_repay_focus(e):
+        nonlocal repay_focused
+        repay_focused = True
+    def on_repay_blur(e):
+        nonlocal repay_focused
+        repay_focused = False
     repay = ft.TextField(
         label = '',
         width = 300
@@ -109,7 +130,7 @@ def loan_creation_view(page : ft.Page):
         print(f'Selected value got {selected_date}')
         
         print(f'Days calculated {days}')
-        term.value = days
+        term.value = str(days)
         term_title.value = f'Loan term days: {days} '
         page.update()
     def handle_dismissal(e: ft.Event[ft.DialogControl]):
@@ -141,14 +162,15 @@ def loan_creation_view(page : ft.Page):
 
 
 # all field's titles
+    
     loan_amount_title = ft.Text(
         'How much you going to lend:',
         size = 15,
         weight = ft.FontWeight.NORMAL,
-        text_align = ft.TextAlign.START
+        text_align = ft.TextAlign.START,
     )
     print ('Title for loan amount field is created')
-
+    
     term_title = ft.Text(
         'Loan term days:',
         size = 15,
@@ -213,14 +235,16 @@ def loan_creation_view(page : ft.Page):
         if session_id and role:
             await deactivate_session(session_id, role)
             print('session is deactivated')
-            await cancel_session(session_id)
-            print('session cancelled')
+            s = await get_session(session_id)
+            if s and s.get('status') != 'complete':
+                await cancel_session(session_id)
+                print('session cancelled')
         await page.push_route('/dashboard')
         print('Navigated to dashboard')
-    back_button.on_click = go_back
+    back_button.on_click = lambda e: page.run_task(go_back)
 # borrower left popup to lender notification when session is cancelled (borrower dismissed invitation)
     async def show_borrower_left_popup():
-        def handle_ok():
+        def handle_ok(e):
             dialog.open = False
             page.update()
             page.run_task(go_back)
@@ -241,6 +265,11 @@ def loan_creation_view(page : ft.Page):
         while polling_active:
             try:
                 # getting current session info
+                sid = page.data.get('session_id')
+                print(f'polling with session_id: {sid}')
+                if not sid:
+                    await asyncio.sleep(1)
+                    continue
                 s = await get_session(session_id)
 
                 if not s or s.get('status') =='canceled':
@@ -251,19 +280,16 @@ def loan_creation_view(page : ft.Page):
                 # lender fuctions
                 if role == 'lender':
                     # watch for borrower sending updated number
-                    if s.get('amount'):
-                        details_changed = (
-                            loan_amount.value != str(s['amount']) or
-                            term.value != str(s['days']) or
-                            repay.value != str(s['return'])
-                        )
-                        if details_changed:
+                    if s.get('amount') and s.get('last_updated_by') == 'borrower':
+                        if not loan_amount_focused and loan_amount.value != str(s['amount']):
                             loan_amount.value = str(s['amount'])
+                        if not term_focused and term.value != str(s['days']):
                             term.value = str(s['days'])
                             term_title.value = f"Loan term days: {s['days']}"
+                        if not repay_focused and repay.value !=str(s['return']):
                             repay.value = str(s['return'])
-                            status_text.value = 'Borrower sent updated details'
-                            page.update()
+                        status_text.value = 'Borrower sent updated details'
+                        page.update()
                     # unlock send agreement button if borrwer joined, changing status
                     if s.get('borrower_active') and send_agreement.disabled:
                         send_agreement.disabled = False
@@ -280,19 +306,16 @@ def loan_creation_view(page : ft.Page):
                 # borrower functions
                 if role == 'borrower':
                     # show if lender send another change
-                    if s.get('amount'):
-                        details_changed = (
-                            loan_amount.value != str(s['amount']) or
-                            term.value != str(s['days']) or
-                            repay.value != str(s['return'])
-                        )
-                        if details_changed:
+                    if s.get('amount') and s.get('last_updated_by') == 'lender':
+                        if not loan_amount_focused and loan_amount.value != str(s['amount']):
                             loan_amount.value = str(s['amount'])
+                        if not term_focused and term.value != str(s['days']):
                             term.value = str(s['days'])
                             term_title.value = f"Loan term days: {s['days']}"
+                        if not repay_focused and repay.value !=str(s['return']):
                             repay.value = str(s['return'])
-                            status_text.value = 'Lender sent updated details'
-                            page.update()
+                        status_text.value = 'Lender sent updated details'
+                        page.update()
 
 
                     
@@ -313,7 +336,7 @@ def loan_creation_view(page : ft.Page):
             except Exception as e:
                 print(f"polling error: {e}")
 
-            await asyncio.sleep(5)
+            await asyncio.sleep(30)
     
     # send details
 
@@ -332,11 +355,12 @@ def loan_creation_view(page : ft.Page):
         await update_negotiation_details(
             session_id =session_id,
             loan_amount = int(loan_amount.value),
-            days = str(term.value),
+            days = int(term.value),
             loan_due_date = due_date.isoformat() if due_date else None,
-            return_amount = int(repay.value)
+            return_amount = int(repay.value),
+            updated_by = role
         )
-        agree_button.visible = True
+        agree_button.visible = False
         status_text.value = 'Details sent- waiting other side to agree'
         page.update()
     send_agreement.on_click = handle_send_agreement
@@ -346,6 +370,12 @@ def loan_creation_view(page : ft.Page):
         await complete_session(session_id)
 
     # create a loan and take change balance
+        borrower_data = page.data.get('borrower')
+        borrower_user = User(
+            user_id = borrower_data['id'],
+            user_name = borrower_data['name'],
+            user_phone = borrower_data['phone_number'],
+            balance = borrower_data['balance'])
 
         result = await user.lend_money_short(
             amount = int(loan_amount.value),
@@ -364,7 +394,7 @@ def loan_creation_view(page : ft.Page):
             notification_title.color = ft.Colors.GREEN_400
         else:
             notification_title.color = ft.Colors.RED_400
-        create_loan_button.visible = False,
+        create_loan_button.visible = False
         status_text.value = 'Loan created'
         page.update()
         await asyncio.sleep(2)
@@ -403,6 +433,7 @@ def loan_creation_view(page : ft.Page):
 
     # start polling when page loads
     page.run_task(start_polling)
+    
 
 
 

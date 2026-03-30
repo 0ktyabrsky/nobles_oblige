@@ -9,6 +9,7 @@ from servises.sessions_services import (create_session, get_pending_session)
 
 
 
+
 # User search another user to lend him money via phone number
 
 def lend_money_view(page: ft.Page):
@@ -17,10 +18,11 @@ def lend_money_view(page: ft.Page):
     saved_user = load_user()
 
     # handling back button
-    def handle_back(e):
+    async def handle_back(e):
         print('back button is clicked')
         print(f'Current route {page.route}')
-        page.go('/dashboard')
+
+        await page.push_route('/dashboard')
         print('Navigated to dashboard')
     # handling search borrower button
     async def handle_search(e):

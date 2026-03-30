@@ -16,7 +16,7 @@ def mobile_wrapper(content):
     )
 
 
-test_user = us.User('9942', 'Simba', '996707143170')
+test_user = us.User('9942', 'Simba', '996707143170', balance = 1000)
 
 
 '''
