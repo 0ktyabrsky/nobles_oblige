@@ -336,7 +336,7 @@ def loan_creation_view(page : ft.Page):
             except Exception as e:
                 print(f"polling error: {e}")
 
-            await asyncio.sleep(30)
+            await asyncio.sleep(2)
     
     # send details
 
