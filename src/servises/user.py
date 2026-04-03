@@ -92,8 +92,7 @@ class User:
         if amount > self.balance:
             return "You don't have enough money"
         # moving money from person to person
-        self.balance -= amount
-        debtor.balance += amount
+        
 
 
         #creating a loan
@@ -106,14 +105,6 @@ class User:
             loan_id = f"{self.user_id}-{debtor.user_id}-{amount}-{term}-{repay}",
             loan_due_date = loan_due_date
         )
-
-        #registering a loan
-        self.given_loans.append(loan)
-        debtor.taken_loans.append(loan)
-        print(loan.credit_details())
-        # presist in db (updating balance , inserting loans)
-        await update_balance(self.user_id, self.balance)
-        await update_balance(debtor.user_id, debtor.balance)
         await insert_loan(
             lender_id = self.user_id,
             borrower_id = debtor.user_id,
@@ -124,6 +115,17 @@ class User:
             session_id = loan_session_id
             
         )
+
+        #registering a loan
+        self.given_loans.append(loan)
+        debtor.taken_loans.append(loan)
+        print(loan.credit_details())
+        # presist in db (updating balance , inserting loans)
+        self.balance -= amount
+        debtor.balance += amount
+        await update_balance(self.user_id, self.balance)
+        await update_balance(debtor.user_id, debtor.balance)
+        
 
         return ("Contract created succesfully!")
         

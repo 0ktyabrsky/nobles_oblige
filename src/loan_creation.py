@@ -281,6 +281,7 @@ def loan_creation_view(page : ft.Page):
                 if role == 'lender':
                     # watch for borrower sending updated number
                     if s.get('amount') and s.get('last_updated_by') == 'borrower':
+                        agree_button.visible = True
                         if not loan_amount_focused and loan_amount.value != str(s['amount']):
                             loan_amount.value = str(s['amount'])
                         if not term_focused and term.value != str(s['days']):
@@ -307,6 +308,7 @@ def loan_creation_view(page : ft.Page):
                 if role == 'borrower':
                     # show if lender send another change
                     if s.get('amount') and s.get('last_updated_by') == 'lender':
+                        agree_button.visible = True
                         if not loan_amount_focused and loan_amount.value != str(s['amount']):
                             loan_amount.value = str(s['amount'])
                         if not term_focused and term.value != str(s['days']):
@@ -382,7 +384,7 @@ def loan_creation_view(page : ft.Page):
             term = int(term.value),
             repay = int(repay.value),
             debtor = borrower_user,
-            loan_due_date = due_date.strftime('%d %m %Y') if due_date else None,
+            loan_due_date = due_date.isoformat() if due_date else None,
             loan_session_id = session_id
             )
         print('Balance changed and money lended')
