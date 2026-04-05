@@ -79,6 +79,7 @@ def dashboard_view(page : ft.Page):
         active_session_id = None # tracking active sessions id
         while dashboard_polling_active:
             try:
+                # every time we update user balance
                 session = await get_pending_session(user.user_id)
                 print(f'dashboard pollig:Session got: {session}')
                 if session and session['id'] != active_session_id:
@@ -98,15 +99,20 @@ def dashboard_view(page : ft.Page):
     async def on_load():
         nonlocal user_data
         if user:
-            user_data = await get_user_by_phone(user.user_phone)
-            if user_data:
-                user.balance =float(user_data['balance'])
-                balance_title.value = f"{user.balance} com"
-                page.update()
             print('polling starting')
             await start_polling()
 
-    page.run_task(on_load)            
+    page.run_task(on_load)  
+
+    async def refresh_balance():
+        while dashboard_polling_active:
+            user_data = await get_user_by_phone(user.user_phone)
+            if user_data:
+                user.balance = float(user_data['balance'])
+                balance_title.value = f'{user.balance} com'
+                page.update()
+            await asyncio.sleep(5)
+
 
     # display user info
 

@@ -3,6 +3,7 @@ import flet as ft
 from Test import mobile_wrapper
 import asyncio
 from servises.loan_services import get_loans_by_borrower
+from servises.loan_services import repay_loan, get_active_loans
 
 
 def loans_view(page : ft.Page):
@@ -151,59 +152,68 @@ def loans_view(page : ft.Page):
     
     # repay button handler 
     def handle_repay(e , captured_loan , btn, status):
+        async def do_repay():
+
             print('repay loan is clicked')
-            list_loan_notification.value = 'Loan repayment is not working currently'
-            list_loan_notification.color=  ft.Colors.RED_400
+            btn.disabled = True
+            btn.color = ft.Colors.GREY_400
+            btn.content = ft.Text('processing...', color = ft.Colors.WHITE)
+            list_loan_notification.value = ''
             page.update()
-            '''
-            result = user.repay_debt( captured_loan.payment_amount , captured_loan.loan_id)
-            print('repay loan function started')
-            print(f'result {result}')
-            if 'successfully' in result:                    
-                
-                # updating all user's data
-                btn.disabled = True
-                btn.bgcolor = ft.Colors.GREY_400
+
+            return_amount = float(captured_loan['return_amount'] + captured_loan['amount'])
+            print(f'Total return amount for this loan: {return_amount}')
+
+            success, message = await repay_loan(
+                loan_id = captured_loan['id'],
+                borrower_id = user.user_id,
+                return_amount = return_amount
+            )
+
+            if success:
+                #updating loan info in each row
                 btn.content = ft.Text('repayed', color = ft.Colors.WHITE)
-                status.value ='closed'
-                btn.update()
-                
-                print(' repay button is disables')
-                updated_info = user.info()
-                # update text values inside cards
-                print(f'taking updated information {updated_info}')
-                
-                total_debt_card.content.controls[0].value  = f"{updated_info['TotalDebt']}"
-                print(total_debt_card.content.controls[0])
-                interest_card.content.controls[0].value =f"{updated_info['TotalInterest']}"
-                print(interest_card.content.controls[0])
-                loans_card.content.controls[0].value = f"{updated_info['LoanNumber']}"
-                print(loans_card.content.controls[0])
-                print('updating text in user stats cards')
-                # updated loan list notification
-                list_loan_notification.value = result
+                status.value = 'closed'
+
+
+                # sync user objects
+                user.balance -=return_amount
+
+                #recalculating cards stats
+                loans = await get_loans_by_borrower(user.user_id)
+                total_debt = sum(float(l['return_amount'] + l['amount']) for l in loans)
+                print(f'Total debt:{total_debt}')
+                total_interest = sum(float(l['return_amount']) for l in loans)
+                print(f'Total_interest: {total_interest}')
+                active_loans = sum(1 for l in loans if l['status'] != 'closed')
+
+                total_debt_card.content.controls[0].value = str(round(total_debt, 2))
+                interest_card.content.controls[0].value = str(round(total_interest, 2))
+                loans_card.content.controls[0].value = str(active_loans)
+
+                list_loan_notification.value = message
                 list_loan_notification.color = ft.Colors.GREEN
-                print('updating loan notification')
-                # update page
-                
-                print('updating all page')
-                
-               
-                page.update()
-                
 
-
-                
             else:
-                list_loan_notification.value = result
-                list_loan_notification.color = ft.Colors.RED
-                list_loan_notification.update()
-                '''
+                # re-enable button on failure
+                btn.disabled = False
+                btn.color = ft.Colors.GREEN
+                btn.content = ft.Text('repay', color = ft.Colors.WHITE)
+                list_loan_notification.value = message
+                list_loan_notification.color = ft.Colors.RED_400
+                
+
+
+            page.update()
+        page.run_task(do_repay)
+
+
+
     # loading loan information
     async def show_loans():
-        loans = await get_loans_by_borrower(user.user_id)
+        loans = await get_active_loans(user.user_id)
         if not loans:
-            list_loan_notification.value = list_loan_notification.value = "You don't have loans"
+            list_loan_notification.value = list_loan_notification.value = "You don't have active loans"
             page.update()
             return
         total_debt = 0
@@ -211,16 +221,16 @@ def loans_view(page : ft.Page):
 
         
         for loan in loans:
+            print(f'Loan details: {loan}')
             lender_name = loan['users']['name']
             amount = float(loan['amount'])
             print(f'This is amount: {amount}')
             return_amount = float(loan['return_amount'])
             print(f'this is return amount: {return_amount}')
-            interest = return_amount - amount
-            print(f"this is interest: {interest}")
-            total_debt = return_amount + amount
+             
+            total_debt += amount + return_amount
             print(f"this is total debt: {total_debt}")
-            total_interest = return_amount
+            total_interest += return_amount
             print(f"this is total interest: {total_interest}")
 
             
