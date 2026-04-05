@@ -96,7 +96,13 @@ def dashboard_view(page : ft.Page):
 
     # start polling when dashboard loaded
     async def on_load():
+        nonlocal user_data
         if user:
+            user_data = await get_user_by_phone(user.user_phone)
+            if user_data:
+                user.balance =float(user_data['balance'])
+                balance_title.value = f"{user.balance} com"
+                page.update()
             print('polling starting')
             await start_polling()
 
@@ -113,7 +119,7 @@ def dashboard_view(page : ft.Page):
     )
     # balance
     balance_title = ft.Text(
-        f'{user.balance}',
+        f'{user.balance} com',
         size = 50,
         weight = ft.FontWeight.NORMAL,
         text_align = ft.TextAlign.CENTER

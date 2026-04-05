@@ -271,6 +271,16 @@ def loan_creation_view(page : ft.Page):
                     await asyncio.sleep(1)
                     continue
                 s = await get_session(session_id)
+                if s.get('status') == 'complete':
+                    polling_active = False
+
+                    notification_title.value = 'Loan successfuly created'
+                    notification_title.color = ft.Colors.GREEN_400
+                    page.update()
+
+                    await asyncio.sleep(2)
+                    await go_back()
+                    return
 
                 if not s or s.get('status') =='canceled':
                     if role == 'lender':
