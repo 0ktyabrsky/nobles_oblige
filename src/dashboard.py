@@ -251,6 +251,30 @@ def dashboard_view(page : ft.Page):
             bgcolor = ft.Colors.WHITE,
         )
     )
+    async def handle_test_dashboard(e):
+        nonlocal dashboard_polling_active
+        print('Test dashboard is clicked')
+        print(f'Current route {page.route}')
+
+        # navigating to the loan list
+        dashboard_polling_active  = False
+        await page.push_route('/dashboard_2')
+        print('Navigating into test dashboard') 
+
+
+
+    test_dsh = ft.Button(
+        content = ft.Text('test_dashboard'),
+        color = ft.Colors.GREY,
+        on_click = handle_test_dashboard,
+
+        style = ft.ButtonStyle(
+            shape = ft.RoundedRectangleBorder(radius = 8),
+            bgcolor = ft.Colors.WHITE,
+        )
+
+
+    )
 
     return ft.View(
         route = '/dashboard',
@@ -271,6 +295,8 @@ def dashboard_view(page : ft.Page):
                                 horizontal_alignment = ft.CrossAxisAlignment.CENTER,
                                 controls = [
                                     welcome_title,
+                                    ft.Container(height = 10),
+                                    test_dsh,
                                     ft.Container(height = 20),
                                     balance_title
 

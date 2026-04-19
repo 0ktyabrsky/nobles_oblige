@@ -107,6 +107,8 @@ async def get_session(session_id):
             'select' : '*'
         }
     )
+    print('STATUS', response.status_code)
+    print('BODY', response.text)
     data = response.json()
     return data[0] if data else None
 
