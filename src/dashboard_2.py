@@ -57,11 +57,11 @@ def dashboard_2_view(page : ft.Page):
             group_list.controls.append(
                 await build_group_tile(group, user.user_id, last_message , last_message_date, sender_name)
                 )
+        
 
         page.update()
 
     async def build_group_tile(group, current_user_id: str , last_message, last_message_date, sender_name):
-        
         partner_initials = '?'
         if group['groups']['type'] == 'dm':
             partner =  await safe_get_dm_partner(group['group_id'], current_user_id)
@@ -79,20 +79,26 @@ def dashboard_2_view(page : ft.Page):
             display_name = group['groups']['name']
             subtitle_text = f'{sender_name}:{last_message}' or ''
             partner_initials = display_name[:1].capitalize()
-        return ft.ListTile(
+        
+        chat = ft.ListTile(
             data = group['group_id'],
             title = ft.Text(display_name, size = 18 , weight = ft.FontWeight.BOLD),
             subtitle = ft.Text(subtitle_text or '', size = 10),
-            trailing = ft.Text(last_message_date or ''),
+            trailing = ft.Text(last_message_date or ''), # must be column so i can add an indicator at the bottom to notify user for new messages , lendings etc
 
             leading = ft.CircleAvatar(
                 content = ft.Text(partner_initials),
                 color = ft.Colors.WHITE,
                 bgcolor = get_avatar_color(display_name)
-            ),
+            ))
+        chat.on_click = lambda e, group = group : handle_click_chat( e , group)
+        return chat
+    def handle_click_chat( e , group):
+        print(f'This is grop user clicked: {group}')
+        page.data['current_chat'] = group
+        page.run_task(page.push_route, '/dashboard')
 
-            on_click = None
-        )
+        print('the tile i clicked')
     async def on_new_group(record):
         print(f'New group realtime: {record}')
 
@@ -125,6 +131,7 @@ def dashboard_2_view(page : ft.Page):
         print(
             'tile created, updating page'
         )
+       
         group_list.controls.append(tile)
 
         page.update()
@@ -141,11 +148,42 @@ def dashboard_2_view(page : ft.Page):
         ]
         page.update()
         print('After deleting group updating page')
+    
+
+    async def on_new_message(record):
+        group_id = record['group_id']
+        new_content = record['content']
+        sent_at = record['sent_at']
+
+        target_tile = None
+        for control in group_list.controls:
+            if control.data == group_id:
+                target_tile = control
+                break
+        if target_tile:
+            target_tile.subtitle.value = new_content
+
+            if sent_at:
+                target_tile.trailing.value = format_message_date(sent_at)
+                
+
+            group_list.controls.remove(target_tile)
+            group_list.controls.insert(0, target_tile)
+
+
+            group_list.update()
+        else:
+            print('"CHat not found')
+    
+        
+
 
 
     # adding realtime listening
     realtime_manager.on_new_group = on_new_group
     realtime_manager.on_delete_group = on_delete_group
+    realtime_manager.on_new_message = on_new_message
+    
 
     
     user_data =  None               
@@ -210,11 +248,15 @@ def dashboard_2_view(page : ft.Page):
         if page.route == target:
             return
         await page.push_route(target)
+
+    grp_id = '4e5c7556-c950-4621-bec6-3632c6db9a74'
             
     
 
     page.run_task(load_data)
     page.run_task(realtime_manager.connect_groups,user.user_id)
+    page.run_task(realtime_manager.connect_messages, grp_id)
+    print(F"CURRENT contacts: {group_list.controls}")
     return ft.View(
         route = '/dashboard_2',
         controls= [

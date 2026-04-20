@@ -123,5 +123,5 @@ async def safe_get_dm_partner(group_id, user_id):
         
         if partner:
             return partner
-        await asyncio.sleep(0.3)
+        await asyncio.sleep(1)
     return None

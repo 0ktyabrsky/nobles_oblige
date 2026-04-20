@@ -24,6 +24,7 @@ adding them to the new_groups and new_messages values so i can use them
 class RealtimeManager:
     def __init__(self):
         self.ws = None
+        self.ws_ready = asyncio.Event()
         self.on_new_group = None
         self.on_new_message = None
         self.on_delete_group = None
@@ -34,16 +35,20 @@ class RealtimeManager:
 
 
                 self.ws = await websockets.connect(SUPABASE_WS_URL) # start connecting 
+                self.ws_ready.set()
                 await self._subscribe_groups(user_id)   # checking for new group and adding it call backs
             
                 await self._listen() # automatically getting this data from call backs and cheking constantly
             except Exception as e:
                 print('WS ERROR:', e)
+                self.ws_ready.clear()
                 await asyncio.sleep(2)
     
     
     async def connect_messages(self, group_id: str):
+        await self.ws_ready.wait()
         await self._subscribe_messages(group_id) # checking for new messages too
+
     async def switch_chats(self, new_group_id: str):
         await self._subscribe_messages(new_group_id) # if user change group check messages from this group only
     # subscribing for group changes: broadcasting for any new groups added . even id someone added me
@@ -75,8 +80,19 @@ class RealtimeManager:
     async def _subscribe_messages(self, group_id: str):
         await self.ws.send(json.dumps({
             'event': 'phx_join',
-            'topic': f"realtime:public:messages:group_id=eq.{group_id}",
-            'payload' : {},
+            'topic': 'realtime:public:messages',
+            'payload' : {
+                'config' :{
+                    'postgres_changes' : [
+                        {
+                            'event' : 'INSERT',
+                            'schema' : 'public',
+                            'table' : 'messages',
+                            'filter' : f'group_id=eq.{group_id}'
+                        }
+                    ]
+                }
+            },
             'ref' : '2'
         }))
     # listening (taking the data back) to the ws value 
@@ -98,6 +114,8 @@ class RealtimeManager:
             old_record = data.get('old_record')
             event_type = data.get('type')
 
+            print(f"TOPIC: {topic} | EVENT_TYPE: {event_type}")
+
 
 
             if not record and not old_record:
@@ -118,6 +136,9 @@ class RealtimeManager:
 
         # if in payload there is topic message add it to the variable
             if 'messages' in topic:
+                print(
+                    f'new message inserted trigger: {record}'
+                )
                 if self.on_new_message:
                     await self.on_new_message(record)
     
