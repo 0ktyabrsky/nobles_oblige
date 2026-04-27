@@ -9,6 +9,7 @@ from servises.sessions_services import cancel_session
 from servises.sessions_services import update_session
 from servises.messanger_services import create_group, get_user_groups, get_dm_partner , get_avatar_color , get_last_message_batch,format_message_date, safe_get_dm_partner
 from real_time.realtime_manager import realtime_manager
+from stored.store import clear_user
 
 
 
@@ -61,6 +62,14 @@ def dashboard_2_view(page : ft.Page):
         
 
         page.update()
+    # handlig log out button
+    async def handle_log_out(e):
+        print('Log out is clicked')
+        print(f'Current route {page.route}')
+    
+        clear_user()
+        await page.push_route('/login')
+        print('Navigating to the log in')
 
     async def build_group_tile(group, current_user_id: str , last_message, last_message_date, sender_name):
         partner_initials = '?'
@@ -227,7 +236,10 @@ def dashboard_2_view(page : ft.Page):
         height = 35,
         padding = 0
         )
-
+    log_out_button = ft.IconButton(
+        icon = ft.Icons.LOGOUT,
+        on_click = handle_log_out
+    )
 
     # cloud buttons with taggs (filetring chats)
 
@@ -281,10 +293,11 @@ def dashboard_2_view(page : ft.Page):
                             horizontal_alignment = ft.CrossAxisAlignment.CENTER,
                             controls = [
                                 ft.Row(
-                                    controls = [ welcome_title , balance_title
-                                    ],
+                                    controls = [ welcome_title , balance_title, log_out_button],
                                     spacing= 30,
-                                    vertical_alignment= ft.CrossAxisAlignment.END
+                                    tight= True,
+                                    alignment = ft.MainAxisAlignment.SPACE_BETWEEN,
+                                    vertical_alignment= ft.CrossAxisAlignment.CENTER
                                 ),
                              search_bar,
                              ft.Container(expand = True, content= group_list)

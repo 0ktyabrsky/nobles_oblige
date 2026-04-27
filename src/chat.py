@@ -60,12 +60,6 @@ def chat_view(page: ft.Page):
         await chat.send_message(e)
 
     
-    send_button = ft.IconButton(
-        icon = ft.Icons.SEND,
-        icon_size = 24, 
-        on_click = handle_send_message,
-        icon_color = ft.Colors.BLUE_400
-    )
 
 
 
@@ -97,25 +91,3 @@ def chat_view(page: ft.Page):
     
     page.run_task(realtime_manager.connect_messages , current_chat['group_id'])
     return chat.build()
-
-'''
-    return ft.View(
-        route = '/chat',
-        controls = [
-            mobile_wrapper(
-                ft.Column(
-                    expand = True,
-                    spacing = 0,
-                    height = page.height,
-                    controls = [
-                        back_button,
-                        chat.message_list,
-                        message_input,
-                        send_button
-                    ]
-                )
-            )
-        ]
-    )
-
-'''
