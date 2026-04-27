@@ -17,3 +17,5 @@ def load_user():
 def clear_user():
     if os.path.exists(STORAGE_FILE):
         os.remove(STORAGE_FILE)
+
+

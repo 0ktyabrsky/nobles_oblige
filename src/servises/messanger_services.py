@@ -75,6 +75,41 @@ async def get_last_message_batch(group_id: str):
     messages = response.json() or []
     return {msg['group_id']: msg for msg in messages}
 
+async def get_messages(group_id: str, limit: int = 50):
+    response = await client.get(
+        f'{URL}/rest/v1/messages',
+        headers = HEADERS,
+        params = {
+            'group_id' :f'eq.{group_id}',
+            'order' :'sent_at.asc',
+            'limit' : limit,
+            'select': '*, users(name)'
+        }
+    )
+    print('get_messages_STATUS', response.status_code)
+    print('get_messages_BODY', response.text)
+    data = response.json()
+    return data if data else []
+
+async def send_message( group_id , sender_id , content , message_type = 'text', reply_to = None):
+
+    response = await client.post(
+        f'{URL}/rest/v1/messages',
+        headers =  {**HEADERS , 'Prefer': 'return=representation'},
+        json = {
+            'group_id' : group_id,
+            'sender_id' : sender_id,
+            'content' : content ,
+            'type' : message_type,
+            'reply_to' : reply_to
+        }
+
+    )
+    print('send_message_STATUS', response.status_code)
+    print('send_message_BODY', response.text)
+
+    return response.json()
+        
 def format_message_date(timestamp: str):
     if not timestamp:
         return ''
@@ -125,3 +160,7 @@ async def safe_get_dm_partner(group_id, user_id):
             return partner
         await asyncio.sleep(1)
     return None
+
+
+
+

@@ -6,6 +6,7 @@ MOBILE_WIDTH = 380
 def mobile_wrapper(content):
     return ft.Row(
         alignment = ft.MainAxisAlignment.CENTER,
+        expand = True,
         controls= [
             ft.Container(
                 width = MOBILE_WIDTH,

@@ -12,6 +12,7 @@ from real_time.realtime_manager import realtime_manager
 
 
 
+
 import asyncio
 
 
@@ -63,6 +64,7 @@ def dashboard_2_view(page : ft.Page):
 
     async def build_group_tile(group, current_user_id: str , last_message, last_message_date, sender_name):
         partner_initials = '?'
+        display_name = None
         if group['groups']['type'] == 'dm':
             partner =  await safe_get_dm_partner(group['group_id'], current_user_id)
             print(f'Dm partner: {partner}')
@@ -91,12 +93,16 @@ def dashboard_2_view(page : ft.Page):
                 color = ft.Colors.WHITE,
                 bgcolor = get_avatar_color(display_name)
             ))
-        chat.on_click = lambda e, group = group : handle_click_chat( e , group)
+        chat.on_click = lambda e, group = group , dm_name = display_name : handle_click_chat( e , group, dm_name)
         return chat
-    def handle_click_chat( e , group):
+    def handle_click_chat( e , group, dm_name):
+        
         print(f'This is grop user clicked: {group}')
-        page.data['current_chat'] = group
-        page.run_task(page.push_route, '/dashboard')
+        page.data['current_group'] = {
+            **group,
+            'display_name' : dm_name
+        }
+        page.run_task(page.push_route, '/chat')
 
         print('the tile i clicked')
     async def on_new_group(record):
@@ -249,13 +255,13 @@ def dashboard_2_view(page : ft.Page):
             return
         await page.push_route(target)
 
-    grp_id = '4e5c7556-c950-4621-bec6-3632c6db9a74'
+    
             
     
 
     page.run_task(load_data)
     page.run_task(realtime_manager.connect_groups,user.user_id)
-    page.run_task(realtime_manager.connect_messages, grp_id)
+    #page.run_task(realtime_manager.connect_messages, grp_id)
     print(F"CURRENT contacts: {group_list.controls}")
     return ft.View(
         route = '/dashboard_2',

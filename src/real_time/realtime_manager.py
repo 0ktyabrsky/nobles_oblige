@@ -3,6 +3,7 @@ import websockets
 import json
 from db import KEY, PROJECT_ID
 import asyncio
+from servises.user_servises import get_user_by_id
 
 
 
@@ -136,11 +137,22 @@ class RealtimeManager:
 
         # if in payload there is topic message add it to the variable
             if 'messages' in topic:
+                if event_type == 'INSERT' and record:
+                    sender_info = await get_user_by_id(record.get('sender_id'))
+                    record['user_info'] = sender_info
+                    record['users'] = {'name': sender_info.get('name', 'Uknown') if sender_info else 'Uknown'}
+                    print(
+                        f'This is updated record: {record}'
+                    )
+
                 print(
                     f'new message inserted trigger: {record}'
                 )
                 if self.on_new_message:
-                    await self.on_new_message(record)
+                    
+                    result = self.on_new_message(record)
+                    if asyncio.iscoroutine(result):
+                        await result
     
     # disconecting realtime
     async def dissconect(self):

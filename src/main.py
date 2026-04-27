@@ -10,6 +10,7 @@ from loans import loans_view
 from stored.store import load_user
 from  servises.user import User
 from dashboard_2 import dashboard_2_view
+from chat import chat_view
 
 # from investments import investments_view
 # from loans import loans_view
@@ -66,6 +67,9 @@ async def main(page: ft.Page):
         elif page.route =='/dashboard_2':
             print('shoving dashboard_2 page')
             page.views.append(dashboard_2_view(page))
+        elif page.route =='/chat':
+            print('showing chat page')
+            page.views.append(chat_view(page))
 
         else:
             print('showing login') 
