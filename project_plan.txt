@@ -152,7 +152,7 @@ You don't need to understand it deeply — just know that when you use `async/aw
 
 ## Your architecture in these terms
 ```
-1. Lender opens app
+1. Lender opens app1
    → creates WebSocket connection
    → joins channel 'session_123'
 
@@ -171,3 +171,99 @@ You don't need to understand it deeply — just know that when you use `async/aw
    → server sends notification payload to borrower's channel
    → popup appears
 )
+
+
+
+Session db plan
+
+LENDER                          DATABASE                        BORROWER
+  │                                │                                │
+  │── fills form ─────────────────>│ session updated:               │
+  │   amount, days, repay          │  amount=1000                   │
+  │   presses "Send"               │  days=30                       │
+  │                                │  repay=1100                    │
+  │                                │  status='pending'              │
+  │                                │                │               │
+  │                                │                │<── polling ───│
+  │                                │                │   sees data   │
+  │                                │                │   filled in   │
+  │                                │                │               │
+  │                                │         borrower opens         │
+  │                                │         loan_creation_view     │
+  │                                │         fields pre-filled      │
+  │                                │         with lender's numbers  │
+  │                                │                │               │
+  │                                │<───────────────│ borrower edits│
+  │                                │  amount=1000   │ and presses   │
+  │<── polling ────────────────────│  days=25       │ "Send back"   │
+  │    sees borrower's             │  repay=1050    │               │
+  │    counter-offer               │                │               │
+  │                                │                │               │
+  │── presses "Agree" ────────────>│ lender_agree=True              │
+  │                                │                │               │
+  │                                │                │<── polling ───│
+  │                                │         borrower sees          │
+  │                                │         lender agreed          │
+  │                                │                │               │
+  │                                │<───────────────│ presses       │
+  │                                │ borrower_agree │ "Agree"       │
+  │                                │   = True       │               │
+  │                                │ status='complete'              │
+  │                                │ loan created                   │
+  │                                │ balances updated               │
+
+
+
+  NEGOTIATION SESSIONS plan
+
+  status='pending'  borrower_active=false  ← lender waiting, forms unlocked for filling but Send disabled
+       │
+       │  borrower clicks Go
+       ▼
+status='pending'  borrower_active=true   ← both inside, Send button enables for lender
+       │
+       ├── borrower dismisses
+       │        │
+       │        ▼
+       │   session cancelled / deleted   ← lender sees popup "Borrower left" → back to dashboard
+       │
+       └── lender fills + sends
+                │
+                ▼
+         amount/days/repay saved         ← borrower sees pre-filled form, can edit and send back
+                │
+                ▼
+         both press Agree
+                │
+                ▼
+         status='complete'               ← loan created, balances updated
+        
+
+### Loan creation file plan
+
+### The full button state flow
+```
+start
+  send_agreement  visible=True   disabled=True (lender) / False (borrower)
+  agree_button    visible=False
+  create_loan     visible=False
+
+lender sends details
+  send_agreement  visible=True   disabled=False  ← unlocked
+  agree_button    visible=True                   ← appears
+
+either side agrees (only one)
+  send_agreement  visible=False  ← gone
+  agree_button    visible=False  ← gone
+  status = 'You agreed — waiting'
+
+both agree
+  lender sees: create_loan  visible=True
+  borrower sees: form locked, status updated
+
+lender presses Create Loan
+  complete_session + create_loan (later)
+  → back to dashboard
+
+
+' +885338 Lola

@@ -1,0 +1,36 @@
+CHAT structure
+DB TABLES
+chats (
+    id,
+    type ( direct or group)
+    name ( text or nullable for direct)
+    created_at
+)
+chat_members(
+    id,
+    chat_id (fk_chats),
+    user_id (fk_users)
+)
+messages (
+    id,
+    chat_id (fk_chats),
+    user_id (fk_users),
+    text,
+    created_at
+)
+
+API CALLS 
+join_chat ( add user id to the chat and chat members)
+
+send_message(add message to special chat by chat_id)
+
+get_messages ( for special chat id and at that time)
+
+leave_chat ( delet user _id from special chat)
+
+get_active_chat ( where user id in chat where more than two chat members)
+
+get_active_direct_chat ( where user id in chat with only two members)
+
+
+
