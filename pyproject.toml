@@ -10,7 +10,11 @@ authors = [
 dependencies = [
     "flet>=0.80.4",
     'httpx',
+<<<<<<< HEAD
     websockets
+=======
+    'websockets'
+>>>>>>> 8dc76ed1cf6727aea5f90a434a2ce937dfc815d2
 ]
 
 [dependency-groups]
