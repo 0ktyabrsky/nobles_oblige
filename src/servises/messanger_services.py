@@ -91,7 +91,7 @@ async def get_messages(group_id: str, limit: int = 50):
     data = response.json()
     return data if data else []
 
-async def send_message( group_id , sender_id , content , message_type = 'text', reply_to = None):
+async def send_message( group_id , sender_id , content , message_type = 'text', reply_to = None, financial_product_code = None):
 
     response = await client.post(
         f'{URL}/rest/v1/messages',
@@ -101,7 +101,9 @@ async def send_message( group_id , sender_id , content , message_type = 'text', 
             'sender_id' : sender_id,
             'content' : content ,
             'type' : message_type,
-            'reply_to' : reply_to
+            'reply_to' : reply_to,
+            'financial_product_code' : financial_product_code
+
         }
 
     )

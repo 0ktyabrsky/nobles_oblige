@@ -26,6 +26,8 @@ request money-buble button
 
 [message input          send button]
 
+lend 
+
 '''
 
 from Test import mobile_wrapper

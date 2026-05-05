@@ -4,6 +4,7 @@ import json
 from db import KEY, PROJECT_ID
 import asyncio
 from servises.user_servises import get_user_by_id
+from servises.sessions_services import get_session
 
 
 
@@ -29,6 +30,8 @@ class RealtimeManager:
         self.on_new_group = None
         self.on_new_message = None
         self.on_delete_group = None
+        self.on_new_application = None
+        self.on_update_application = None
     # connects to websocket and automatically geting callbacks from it
     async def connect_groups(self, user_id: str):
         while True:
@@ -98,6 +101,32 @@ class RealtimeManager:
         }))
     # listening (taking the data back) to the ws value 
 
+    # subscribing for application session to create applications, update details like interest amount etc
+    async def _subscribe_appication(self, application_id: str):
+        await self.ws.send(json.dumps({
+            'event': 'phx_join',
+            'topic':'realtime:public:sessions',
+            'payload': {
+                'config': {
+                    'postgres_changes' : [
+                        {
+                            'event' : 'INSERT',
+                            'schema' : 'public',
+                            'table' : 'sessions',
+                            'filter' : f'id=eq.{application_id}'
+                        },
+                        {
+                            'event' : 'UPDATE',
+                            'schema' : 'public',
+                            'table' : 'sessions',
+                            'filter' : f'id=eq.{application_id}'
+                        }
+                    ]
+                }
+            },
+            'ref' : '3'
+        }))
+
     async def _listen(self):
         async for raw in self.ws:
             print(f"Realtime Raw: {raw}")
@@ -141,6 +170,12 @@ class RealtimeManager:
                     sender_info = await get_user_by_id(record.get('sender_id'))
                     record['user_info'] = sender_info
                     record['users'] = {'name': sender_info.get('name', 'Uknown') if sender_info else 'Uknown'}
+
+                    if record.get('type') == 'loan_contract' and record.get('financial_product_code'):
+                        record['fin_product'] = await get_session(record['financial_product_code'])
+                    else:
+                        record['fin_product'] = None
+
                     print(
                         f'This is updated record: {record}'
                     )
@@ -148,11 +183,20 @@ class RealtimeManager:
                 print(
                     f'new message inserted trigger: {record}'
                 )
+
                 if self.on_new_message:
                     
                     result = self.on_new_message(record)
                     if asyncio.iscoroutine(result):
                         await result
+            # Searching for new application session in the special appliaction 
+            if 'sessions' in topic:
+                if event_type == 'INSERT' and record:
+                    print(f'NEw loan application created: {record}')
+                
+
+                if event_type == 'UPDATE' and record:
+                    print(f'this application was updated: {record}')
     
     # disconecting realtime
     async def dissconect(self):

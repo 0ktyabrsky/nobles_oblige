@@ -33,8 +33,10 @@ def dashboard_view(page : ft.Page):
 
         #handlers ( handle go, handle dismiss)
         async def handle_go(e):
+            
             nonlocal dashboard_polling_active
             dashboard_polling_active = False
+            '''
 
             await update_session(session['id'], 'borrower')
             page.data['session_id'] = session['id']
@@ -47,18 +49,19 @@ def dashboard_view(page : ft.Page):
             print(f"User session data stored: {page.data.get('session')}")
             
             dialog.open = False
-            await page.push_route('/loan_creation')
+            #await page.push_route('/loan_creation')
             page.update()
             print(f'User {user.user_name} goes to the negotiation session with {lender_name}, negotioation session is stored: {page.data.get('session')}')
-            
-
+            '''
         async def handle_dismiss(e):
+            '''
             await cancel_session(full_session['id'])
             dialog.open = False
 
             
             print('user dismissed invitation')
             page.update()
+            '''
         # loan invitation alert dialo
         dialog =   ft.AlertDialog(
             title = ft.Text('Contract creation'),
@@ -84,7 +87,8 @@ def dashboard_view(page : ft.Page):
                 print(f'dashboard pollig:Session got: {session}')
                 if session and session['id'] != active_session_id:
                     active_session_id = session['id']
-                    await show_invitation_popup(session)
+                    #await show_invitation_popup(session)
+                    print(f'Found new loan application session')
                 elif not session:
                     active_session_id = None #if not active session defining it as None
             except Exception as e:

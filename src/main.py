@@ -56,7 +56,7 @@ async def main(page: ft.Page):
             print('Showing invetsments page')
             page.views.append(investments_view(page))
         elif page.route == '/borrow_money':
-            print('Showing request money pgae')
+            print('Showing request money pgae') 
             page.views.append(borrow_money_view(page))
         elif page.route == '/loan_request':
             print('showing loan request page')

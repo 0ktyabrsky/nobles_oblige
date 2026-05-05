@@ -74,6 +74,7 @@ def dashboard_2_view(page : ft.Page):
     async def build_group_tile(group, current_user_id: str , last_message, last_message_date, sender_name):
         partner_initials = '?'
         display_name = None
+        display_id = None
         if group['groups']['type'] == 'dm':
             partner =  await safe_get_dm_partner(group['group_id'], current_user_id)
             print(f'Dm partner: {partner}')
@@ -83,6 +84,7 @@ def dashboard_2_view(page : ft.Page):
                 subtitle_text = last_message or ''
             else:
                 display_name= partner['users']['name']
+                display_id = partner['user_id']
                 print(f'Displayed name: {display_name}')
                 subtitle_text = last_message or ""
                 partner_initials =  display_name[:1].capitalize()
@@ -102,14 +104,17 @@ def dashboard_2_view(page : ft.Page):
                 color = ft.Colors.WHITE,
                 bgcolor = get_avatar_color(display_name)
             ))
-        chat.on_click = lambda e, group = group , dm_name = display_name : handle_click_chat( e , group, dm_name)
+        chat.on_click = lambda e, group = group , dm_name = display_name, dm_id = display_id : handle_click_chat( e , group, dm_name,dm_id )
         return chat
-    def handle_click_chat( e , group, dm_name):
+    def handle_click_chat( e , group, dm_name, dm_id = None):
         
         print(f'This is grop user clicked: {group}')
+        if group['groups']['type'] == 'dm':
+            page.data['dm_companion'] = {}
         page.data['current_group'] = {
             **group,
-            'display_name' : dm_name
+            'display_name' : dm_name,
+            'display_id' :dm_id if dm_id else 'No id to display'
         }
         page.run_task(page.push_route, '/chat')
 

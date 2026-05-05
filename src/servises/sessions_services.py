@@ -14,17 +14,18 @@ from db import URL, HEADERS
 import httpx
 client = httpx.AsyncClient()
 
-async def create_session(lender_id, borrower_id, role):
+async def create_session(lender_id, borrower_id, amount, days, amount_return):
     response = await client.post(
-        f'{URL}/rest/v1/sessions',
-        headers = {**HEADERS , 'Prefer': 'return=representation'},
-        json = {'lender_id': lender_id, 'borrower_id': borrower_id , 
-                'status' : 'pending',
-                 f'{role}_active' : True }
-    )
+        f'{URL}/rest/v1/rpc/create_application_session',
+        headers =HEADERS,
+        json = {'p_lender_id': lender_id,
+                'p_borrower_id': borrower_id,
+                'p_amount' :amount,
+                'p_days' : days,
+                'p_return': amount_return})
     print('STATUS', response.status_code)
     print('BODY', response.text)
-    return response.json()[0]
+    return response.json()
 
 async def update_negotiation_details(session_id, loan_amount, days, loan_due_date, return_amount, updated_by):
     response = await client.patch(
@@ -85,8 +86,8 @@ async def complete_session(session_id):
         params = {'id': f'eq.{session_id}'},
         json = {'status' : 'complete'}
     )
-    print('STATUS', response.status_code)
-    print('BODY', response.text)
+    print('CREATE SESSION STATUS', response.status_code)
+    print('CREATE SESSION BODY', response.text)
 
 async def cancel_session(session_id):
     response = await client.patch(
@@ -107,8 +108,8 @@ async def get_session(session_id):
             'select' : '*'
         }
     )
-    print('STATUS', response.status_code)
-    print('BODY', response.text)
+    print('GET_SESSION STATUS', response.status_code)
+    print('GET SESSION BODY', response.text)
     data = response.json()
     return data[0] if data else None
 
