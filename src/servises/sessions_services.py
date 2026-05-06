@@ -82,12 +82,14 @@ async def set_agreement(session_id, role):
 async def complete_session(session_id):
     response = await client.patch(
         f'{URL}/rest/v1/sessions',
-        headers = HEADERS,
+        headers = {**HEADERS, 'Prefer' : 'return=representation'},
         params = {'id': f'eq.{session_id}'},
         json = {'status' : 'complete'}
     )
-    print('CREATE SESSION STATUS', response.status_code)
-    print('CREATE SESSION BODY', response.text)
+    print('Complete SESSION STATUS', response.status_code)
+    print('COMPLETE SESSION BODY', response.text)
+    print("Conplete session URL", response.request.url)
+    return response.json()[0]
 
 async def cancel_session(session_id):
     response = await client.patch(

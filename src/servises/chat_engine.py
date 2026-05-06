@@ -8,14 +8,39 @@ Triggesr FOR DIFFERENT MESSAGE TYPES
         Lending trough  message logic:
 
     1) creating a loan application session via POST (lender_id = userA_id, borrower_id = userB_id, amount , days, return = Optional)
-'''
+
+    
+   To create a loan i need
+   Borrower class -> borrower data (
+   borrower_user = User(
+            user_id = borrower_data['id'],
+            user_name = borrower_data['name'],
+            user_phone = borrower_data['phone_number'],
+            balance = borrower_data['balance'])) 
+             -> so i need to store local data for every dm  
+               OR i can fetch data every time i have partner id
+               i call get_user_by_id
+                   
+            THEN I CAN CREATE A USER CLASS with borrower
+
+            after that
+            Update message ( by id)
+            status : complete
+            buttons - OFF
+
+            all that via non local agree botton etc
+
+
+                         
+                   '''
 
 import flet as ft
 from dataclasses import dataclass
 from servises.messanger_services import format_message_date, get_messages, send_message, get_dm_partner
-from servises.sessions_services import create_session, get_session
+from servises.sessions_services import create_session, get_session, complete_session
 from servises.user_servises import get_user_by_id
 from Test import mobile_wrapper
+from servises.user import User
 
 from finance_dialog import FinanceDialog
 
@@ -26,9 +51,11 @@ class Message:
     content: str
     message_type: str
     sent_at: str
+    user : object
     reply_to: str = None
     financial_product_code: str = None
     fin_product: dict = None
+    
 
 
 @ft.control
@@ -89,25 +116,46 @@ class ChatMessage(ft.Row):
                 )
         
         
-        agree_button = ft.Button(ft.Text('Agree', color = ft.Colors.WHITE),bgcolor = ft.Colors.GREEN)
+        agree_button = ft.Button(ft.Text('Agree', color = ft.Colors.WHITE),bgcolor = ft.Colors.GREEN, on_click = self._handle_create_loan)
         disagree_button = ft.Button(ft.Text('Disagree', color = ft.Colors.WHITE), bgcolor = ft.Colors.RED)
         edit_button = ft.Button(ft.Text('Edit', color = ft.Colors.WHITE), bgcolor = ft.Colors.BLUE)
         cancel_button = ft.Button(ft.Text('Cancel', color = ft.Colors.WHITE), bgcolor = ft.Colors.RED)
-        sender_actions = ft.Row(
-                        controls = [
-                            edit_button,
-                            cancel_button
-                        ],
-                        alignment = ft.MainAxisAlignment.CENTER
-                    )
-        parthner_actions = ft.Row(
-                        controls = [
-                            agree_button,
-                            disagree_button
-                        ],
-                        alignment = ft.MainAxisAlignment.CENTER
-                    )
-        contract = ft.Card( content = ft.Container(
+
+        if self.message.fin_product['status'] == 'complete':
+            sender_actions = ft.Row(
+                controls = [
+                    ft.Text('Loan created succesfuly')
+                ]
+            )
+            partner_actions = ft.Row(
+                controls = [
+                    ft.Text('Loan created succesfuly')
+                ]
+            )
+
+            contract_status = ft.Text(f'{self.message.fin_product['status']}', color = ft.Colors.GREEN, size = 10)
+
+
+        else:
+            sender_actions = ft.Row(               
+                controls = [
+                    edit_button,
+                    cancel_button],
+            alignment = ft.MainAxisAlignment.CENTER
+            )
+        
+            partner_actions = ft.Row(
+                            controls = [
+                                agree_button,
+                                disagree_button
+                            ],
+                            alignment = ft.MainAxisAlignment.CENTER
+                        )
+            contract_status = ft.Text(f'{self.message.fin_product['status']}', color = ft.Colors.GREY, size = 10)
+        
+        contract = ft.Card( content = 
+                           ft.Container(
+                               on_click = lambda e: print('Cliked contract card'),
                 content = ft.Column([
                     ft.Text(self.message.sender_name,  weight = ft.FontWeight.BOLD) if not self.is_mine else ft.Container(),
                     ft.Text('Loan contract',weight = ft.FontWeight.BOLD, size = 15 ),
@@ -163,10 +211,10 @@ class ChatMessage(ft.Row):
                         ],
                         alignment = ft.MainAxisAlignment.CENTER
                     ),
-                    sender_actions if self.is_mine else parthner_actions,
+                    sender_actions if self.is_mine else partner_actions, # if it is mine true we show only EDIT OR CANCEL BUTTONS, on the other hand we show agree or disagree
                     ft.Row(
                         controls = [
-                            ft.Text(f'status: {self.message.fin_product['status']}', color = ft.Colors.GREY, size = 10),
+                            contract_status,
                             ft.Text(format_message_date(self.message.sent_at), size = 10 , color = ft.Colors.GREY)
                         ],
                         alignment = ft.MainAxisAlignment.SPACE_BETWEEN
@@ -202,8 +250,41 @@ class ChatMessage(ft.Row):
                     padding = 10
                 )
             )
-        ]              
-       
+        ]
+
+    # here we adding agree for loan handler 
+    async def _handle_create_loan(self,e):
+
+# first we fetch borrower data
+        lender_data =  await get_user_by_id(self.message.sender_id)
+        print(f'Succesfuly fetch lender data: {lender_data}')
+        lender_user = User(
+            user_id = lender_data['id'],
+            user_name = lender_data['name'],
+            user_phone = lender_data['phone_number'],
+            balance = lender_data['balance'],
+        )
+        
+        print(f'Succesfuly created lender class: {lender_user.info()}')
+        print(f'This is session is about complete: {self.message.financial_product_code}')
+        
+        updated_session = await complete_session(self.message.financial_product_code) 
+        print(f'This is updated sessopn: {updated_session}') 
+
+        # here we are creating a loan
+        loan_result = await lender_user.lend_money_short(
+            amount = updated_session['amount'],
+            term = updated_session['days'],
+            repay = updated_session['return'],
+            loan_due_date = None,
+            loan_session_id = updated_session['id'],
+            debtor = self.message.user
+            )
+        
+        #await get_session(self.message.financial_product_code)  
+        #print(f'This session is complete: )
+    
+     
 
     def get_initials(self, user_name:str):
         if user_name:
@@ -255,7 +336,7 @@ class Chat:
             sender_name = msg['user_info']['name']
         else:
             sender_name = 'Uknown'
-
+        
         # here i need to chek for different type of message : if lend money message one type, if money request, another.
         print(f'THis is checking msg: {msg}')
         print(f'Got fin product: {fin_product}')
@@ -268,7 +349,8 @@ class Chat:
                 sent_at = msg['sent_at'],
                 reply_to = msg.get('reply_to'),
                 financial_product_code =  msg['financial_product_code'],
-                fin_product = fin_product
+                fin_product = fin_product,
+                user = self.user
             ),
             is_mine = msg['sender_id'] == self.user.user_id
         )
@@ -283,7 +365,7 @@ class Chat:
         for msg in messages:
             print(f'this is messages from Db:{msg}')
             if msg['type'] == 'loan_contract' and msg['financial_product_code']:
-                product =  msg.get('fin_product')
+                product =  await get_session(msg['financial_product_code'])
                 self.message_list.controls.append(self._from_db(msg, product))
             else:
                 #print(f'This is type of session: {type(product)}')
