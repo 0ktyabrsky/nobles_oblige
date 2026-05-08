@@ -1,5 +1,5 @@
 [project]
-name = "third"
+name = "Julia"
 version = "0.1.0"
 description = ""
 readme = "README.md"
@@ -7,14 +7,9 @@ requires-python = ">=3.10"
 authors = [
     { name = "Flet developer", email = "rinatshailoobekov@gmai.com" }
 ]
-dependencies = [
-    "flet>=0.80.4",
+dependencies = ["flet>=0.80.4",
     'httpx',
-<<<<<<< HEAD
-    websockets
-=======
     'websockets'
->>>>>>> 8dc76ed1cf6727aea5f90a434a2ce937dfc815d2
 ]
 
 [dependency-groups]
