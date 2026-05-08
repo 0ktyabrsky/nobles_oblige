@@ -32,6 +32,8 @@ class RealtimeManager:
         self.on_delete_group = None
         self.on_new_application = None
         self.on_update_application = None
+        self.on_new_session = None
+        self.on_update_session = None
     # connects to websocket and automatically geting callbacks from it
     async def connect_groups(self, user_id: str):
         while True:
@@ -52,6 +54,11 @@ class RealtimeManager:
     async def connect_messages(self, group_id: str):
         await self.ws_ready.wait()
         await self._subscribe_messages(group_id) # checking for new messages too
+
+    # here we need to connect to the specific session that newly created
+    async def connect_sessions(self, session_id):
+        await self.ws_ready.wait()
+        await self._subscribe_application(application_id = session_id)
 
     async def switch_chats(self, new_group_id: str):
         await self._subscribe_messages(new_group_id) # if user change group check messages from this group only
@@ -102,7 +109,7 @@ class RealtimeManager:
     # listening (taking the data back) to the ws value 
 
     # subscribing for application session to create applications, update details like interest amount etc
-    async def _subscribe_appication(self, application_id: str):
+    async def _subscribe_application(self, application_id: str):
         await self.ws.send(json.dumps({
             'event': 'phx_join',
             'topic':'realtime:public:sessions',
@@ -193,10 +200,20 @@ class RealtimeManager:
             if 'sessions' in topic:
                 if event_type == 'INSERT' and record:
                     print(f'NEw loan application created: {record}')
-                
+                    if self.on_new_session:
 
+                        result = self.on_new_session(record)
+                        if asyncio.iscoroutine(result):
+                            await result             
+                
                 if event_type == 'UPDATE' and record:
                     print(f'this application was updated: {record}')
+                    if self.on_update_session:
+                        result = self.on_update_session(record)
+                        if asyncio.iscoroutine(result):
+                            await result
+
+                
     
     # disconecting realtime
     async def dissconect(self):

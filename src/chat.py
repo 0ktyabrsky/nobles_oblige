@@ -50,6 +50,8 @@ def chat_view(page: ft.Page):
     chat = Chat(page, user)
 
     realtime_manager.on_new_message  = chat.append_message
+    #realtime_manager.on_update_application = chat.update_contract_message
+    #realtime_manager.on_new_application = chat.on_new_application_session
 
 
     async def handle_back(e):

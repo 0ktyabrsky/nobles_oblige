@@ -1,6 +1,8 @@
 import flet as ft
 from servises.sessions_services import create_session
 from servises.messanger_services import send_message
+import datetime
+from real_time.realtime_manager import realtime_manager
 
 
 class FinanceDialog:
@@ -10,6 +12,7 @@ class FinanceDialog:
         self.group_id = group_id
         self.parthner_id = parthner_id
         self.current_tab = 0
+        
 
         self.user_balance = self.user.balance
 
@@ -23,6 +26,7 @@ class FinanceDialog:
         
 
         self.loan_contract_days = ft.TextField(label = 'for how many days', keyboard_type = ft.KeyboardType.NUMBER)
+        
         
         self.loan_contract_return = ft.TextField(label  = 'How much to charge', keyboard_type = ft.KeyboardType.NUMBER)
         
@@ -109,6 +113,7 @@ class FinanceDialog:
     
     async def _on_send(self):
         tab = self.current_tab
+        loan_contract_due_date = datetime.datetime.now() + datetime.timedelta(int(self.loan_contract_days.value))
         
         if tab == 0:
             print(f'this is a button from tabs {tab}')
@@ -120,9 +125,11 @@ class FinanceDialog:
                 self.parthner_id,
                 self.loan_contract_amount.value,
                 self.loan_contract_days.value,
+                loan_contract_due_date.isoformat(),
                 self.loan_contract_return.value
             )
             print(f'this is newly created loan application: {new_loan_application['id']}')
+            
             await send_message(
                 self.group_id,
                 self.user.user_id,
@@ -130,6 +137,7 @@ class FinanceDialog:
                 message_type = 'loan_contract',
                 financial_product_code = new_loan_application['id'] if new_loan_application else None
             )
+            
         
             
 

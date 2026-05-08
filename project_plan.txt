@@ -267,3 +267,24 @@ lender presses Create Loan
 
 
 ' +885338 Lola
+
+
+
+''' New db Logic for loan session creation
+new table financial products 
+id - new generates
+finacnial product - text (whether it transaction or loan request)
+
+
+so when i create a loan_reuest :
+first create id in financial products
+add type : loan request
+
+second:
+add row to the loan request where id is corresponding financial type for the loan request
+
+third:
+add that id to the message tabel: financial product id = loan_request_id
+
+
+To show t

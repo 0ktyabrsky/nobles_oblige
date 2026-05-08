@@ -14,7 +14,7 @@ from db import URL, HEADERS
 import httpx
 client = httpx.AsyncClient()
 
-async def create_session(lender_id, borrower_id, amount, days, amount_return):
+async def create_session(lender_id, borrower_id, amount, days,due_date, amount_return):
     response = await client.post(
         f'{URL}/rest/v1/rpc/create_application_session',
         headers =HEADERS,
@@ -22,9 +22,10 @@ async def create_session(lender_id, borrower_id, amount, days, amount_return):
                 'p_borrower_id': borrower_id,
                 'p_amount' :amount,
                 'p_days' : days,
+                'p_due_date' : due_date,
                 'p_return': amount_return})
-    print('STATUS', response.status_code)
-    print('BODY', response.text)
+    print('CREATE SESSION STATUS', response.status_code)
+    print('CREATE SESSION BODY', response.text)
     return response.json()
 
 async def update_negotiation_details(session_id, loan_amount, days, loan_due_date, return_amount, updated_by):
